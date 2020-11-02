@@ -29,40 +29,19 @@ qvalue = packages.importr('qvalue')
 # Collecting arguments and initializing logfile / output directory
 ################################################################################
 parser = argparse.ArgumentParser()
-
-# Required file and parameter inputs 
-parser.add_argument('--in_tsv', type = str, required = True)
-parser.add_argument('--out_tsv', '-o', required = True)
-parser.add_argument('--normalization_tsv', type = str, required = True)
-parser.add_argument('--sample_groups', required = True)
-parser.add_argument('--sample_names', required = True)
-parser.add_argument('--rt_cols', required = True)
-parser.add_argument('--stats_tsv', default = None)
-
-
-# Clustering parameters with defaults
-parser.add_argument('--alpha', type = float, default = 4.0)
-parser.add_argument('--tau', type = float, default = 0.25)
-parser.add_argument('--no_recursive_clustering', action = 'store_true')
-parser.add_argument('--frac_peaks', default = 0.8, type = float)
-parser.add_argument('--rt_1sWindow', default = 5.0, type = float)
-parser.add_argument('--cluster_outlier_1sWidth', default = 3.0, type = float)
-parser.add_argument('--rt_iqr_filter', default = 1.5, type = float)
-parser.add_argument('--parent_mz_check_intensity_frac', default = 0.6, type = float)
-parser.add_argument('--dropped_clust_RT_width', default = 2.5, type = float)
-
-# Runtime options
-parser.add_argument('--verbose', '-v', action = 'store_true')
-parser.add_argument('--test', action = 'store_true')
-parser.add_argument('--keep_temp_files', default = False)
-
+parser.add_argument('--in_file', required = True)
 args = parser.parse_args()
+
+df_args = pd.read_excel(args.in_file, names = ['arg', 'value'], header = None)
+for arg, value in df_args.values:
+	setattr(args, arg, value) 
 
 # Make sure sample_groups, sample_names, and rt_cols are provided as comma-delimited
 # lists
 args.sample_groups = [x.replace(' ', '') for x in args.sample_groups.split(",")]
 args.sample_names = [x.replace(' ', '') for x in args.sample_names.split(",")]
 args.rt_cols = [x.replace(' ', '') for x in args.rt_cols.split(",")]
+args.no_recursive_clustering = {'false' : False, 'true' : True}[str(args.no_recursive_clustering).lower()]
 
 
 # Set up output directory, logfile, and intermediate files directory

@@ -9,7 +9,7 @@ from tqdm.auto import tqdm
 from pyteomics import mzml, mgf
 import argparse
 ################################################################################
-# 
+
 ################################################################################
 parser = argparse.ArgumentParser()
 

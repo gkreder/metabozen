@@ -34,6 +34,7 @@ RUN jupyter labextension install @jupyter-widgets/jupyterlab-manager
 RUN pip install rpy2
 RUN pip install matplotlib
 RUN pip install lxml pyteomics
+RUN pip xlrd
 
 
 
