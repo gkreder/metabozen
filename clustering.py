@@ -135,7 +135,7 @@ def get_dist_mat(df_sorted_intensities, df_sorted_rts, max_distance):
 	return(pd.DataFrame(allDists, index = df_sorted_intensities.index, columns = df_sorted_intensities.index))
 
 def get_linkage(df_sorted_intensities, df_sorted_rts, max_distance):
-	dist_mat = get_dist_mat(df_sorted_intensities, df_sorted_intensities, max_distance)
+	dist_mat = get_dist_mat(df_sorted_intensities, df_sorted_rts, max_distance)
 	dist_diffs = dist_mat - dist_mat.T
 	max_diff = dist_diffs.to_numpy().max()
 	# Manually check that the distance matrix is symmetric and has 
