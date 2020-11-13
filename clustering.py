@@ -32,7 +32,13 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--in_file', required = True)
 args = parser.parse_args()
 
-df_args = pd.read_excel(args.in_file, names = ['arg', 'value'], header = None)
+if args.in_file.endswith('.xlsx'):
+	df_args = pd.read_excel(args.in_file, names = ['arg', 'value'], header = None)
+elif args.in_file.endswith('.tsv'):
+	df_args = pd.read_csv(args.in_file, sep = '\t', names = ['arg', 'value'], header = None)
+else:
+	sys.exit(f"Error - unrecognized input file extension {args.in_file.split('.')[-1]} try one of [.xlsx, .tsv]")
+	
 for arg, value in df_args.values:
 	setattr(args, arg, value) 
 
