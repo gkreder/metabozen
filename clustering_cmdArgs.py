@@ -29,20 +29,24 @@ qvalue = packages.importr('qvalue')
 # Collecting arguments and initializing logfile / output directory
 ################################################################################
 parser = argparse.ArgumentParser()
-parser.add_argument('--in_file', required = True)
-args = parser.parse_args()
+parser.add_argument('--in_tsv', required = True)
+parser.add_argument('--out_tsv', required = True)
+parser.add_argument('--sample_names', required = True)
+parser.add_argument('--rt_cols', required = True)
 
-if args.in_file.endswith('.xlsx'):
-	df_args = pd.read_excel(args.in_file, names = ['arg', 'value'], header = None)
-elif args.in_file.endswith('.tsv'):
-	df_args = pd.read_csv(args.in_file, sep = '\t', names = ['arg', 'value'], header = None)
-else:
-	sys.exit(f"Error - unrecognized input file extension {args.in_file.split('.')[-1]} try one of [.xlsx, .tsv]")
-	
-for arg, value in df_args.values:
-	if str(value) == 'nan':
-		value = None
-	setattr(args, arg, value)
+parser.add_argument('--normalization_tsv', default = None)
+parser.add_argument('--sample_groups', default = None)
+parser.add_argument('--stats_tsv', default = None)
+parser.add_argument('--alpha', default = 0.25)
+parser.add_argument('--tau', default = 4.0)
+parser.add_argument('--no_recursive_clustering', default = False)
+parser.add_argument('--frac_peaks', default = 0.8)
+parser.add_argument('--rt_1sWindow', default = 5)
+parser.add_argument('--cluster_outlier_1sWidth', default = 3)
+parser.add_argument('--rt_iqr_filter', default = 1.5)
+parser.add_argument('--parent_mz_check_intensity_frac', default = 0.6)
+parser.add_argument('--dropped_clust_RT_width', default = 2.5)
+args = parser.parse_args()
 
 
 # Make sure sample_groups, sample_names, and rt_cols are provided as comma-delimited
@@ -132,7 +136,7 @@ def get_dist_mat(df_sorted_intensities, df_sorted_rts, max_distance):
 	# Calculate the retention-time portio of the metric. Again, ignoring NaN cells in the calculation
 	rDists = np.sqrt( sklearn.metrics.pairwise.nan_euclidean_distances(df_sorted_rts.values, squared = True) / num_cols)
 	if args.tau == 0.0:
-		rDists = (np.ones(rDists.shape) - (rDists == 0).astype(float)) * args.alpha
+		rDists = (np.ones(rDists.shape) - (rDists == 0).astype(int)) * args.alpha
 	else:
 		rDists = args.alpha * (1 - np.exp(-rDists / args.tau))
 	
