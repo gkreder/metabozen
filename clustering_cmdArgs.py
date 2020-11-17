@@ -158,7 +158,7 @@ def get_linkage(df_sorted_intensities, df_sorted_rts, max_distance):
 	# Manually check that the distance matrix is symmetric and has 
 	# zeros down the diagonal because the checks are turned off in 
 	# squareform call below
-	if max_diff > 1e-5:
+	if max_diff > 1e-4:
 		max_row = dist_diffs.max().sort_values(ascending = False).index[0]
 		max_col = dist_diffs[max_row].sort_values(ascending = False).index[0]    
 		sys.exit(f'Error - the distance calculation did not produce a symmetric matrix. E.g. check the calculation at {max_row}, {max_col} with a calculation difference of {dist_diffs[max_row][max_col]}')
