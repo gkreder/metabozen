@@ -136,7 +136,7 @@ def get_dist_mat(df_sorted_intensities, df_sorted_rts, max_distance):
 	# Calculate the retention-time portio of the metric. Again, ignoring NaN cells in the calculation
 	rDists = np.sqrt( sklearn.metrics.pairwise.nan_euclidean_distances(df_sorted_rts.values, squared = True) / num_cols)
 	if args.tau == 0.0:
-		rDists = (np.ones(rDists.shape) - (rDists == 0).astype(int)) * args.alpha
+		rDists = (np.ones(rDists.shape) - (np.nan_to_num(np.abs(rDists), nan = np.inf) <= 1e-4).astype(int)) * args.alpha
 	else:
 		rDists = args.alpha * (1 - np.exp(-rDists / args.tau))
 	
