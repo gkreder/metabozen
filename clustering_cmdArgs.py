@@ -134,7 +134,7 @@ def get_dist_mat(df_sorted_intensities, df_sorted_rts, max_distance):
 	pDists[np.where((df_noNans > 0) & (df_noNans < 3) & ((num_cols - df_noNans) <= df_bothNans) & (mDists >= 1e-2))] = 0.1
 	
 	# Calculate the retention-time portio of the metric. Again, ignoring NaN cells in the calculation
-	rDists = np.sqrt( sklearn.metrics.pairwise.nan_euclidean_distances(df_sorted_rts.values, squared = True) / num_cols)
+	rDists = np.round(np.sqrt( sklearn.metrics.pairwise.nan_euclidean_distances(df_sorted_rts.values, squared = True) / num_cols), 3)
 	if args.tau == 0.0:
 		rDists = (np.ones(rDists.shape) - (np.nan_to_num(np.abs(rDists), nan = np.inf) <= 1e-4).astype(int)) * args.alpha
 	else:
@@ -161,9 +161,9 @@ def get_linkage(df_sorted_intensities, df_sorted_rts, max_distance):
 	if max_diff > 1e-4:
 		max_row = dist_diffs.max().sort_values(ascending = False).index[0]
 		max_col = dist_diffs[max_row].sort_values(ascending = False).index[0]    
-		sys.exit(f'Error - the distance calculation did not produce a symmetric matrix. E.g. check the calculation at {max_row}, {max_col} with a calculation difference of {dist_diffs[max_row][max_col]}')
+		sys.exit(f'Error - alpha={args.alpha} tau={args.tau}, the distance calculation did not produce a symmetric matrix. E.g. check the calculation at {max_row}, {max_col} with a calculation difference of {dist_diffs[max_row][max_col]}')
 	if np.any(np.diag(dist_mat)):
-		sys.exit(f'Error - the distance calculation did not produce zeros on the diagonal of the distance matrix. E.g. check {dist_mat.index[np.where(np.diag(dist_mat))[0][0]]}')
+		sys.exit(f'Error - alpha={args.alpha} tau={args.tau}, the distance calculation did not produce zeros on the diagonal of the distance matrix. E.g. check {dist_mat.index[np.where(np.diag(dist_mat))[0][0]]}')
 	dist_mat_1D = scipy.spatial.distance.squareform(dist_mat, checks = False)
 	return(scipy.cluster.hierarchy.linkage(dist_mat_1D, method = 'average'))
 
