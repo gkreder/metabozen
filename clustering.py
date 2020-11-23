@@ -128,6 +128,12 @@ def get_dist_mat(df_sorted_intensities, df_sorted_rts, max_distance):
 	# 		2nd case - the few intensity observations aren't exactly the same, set them to be very close to each other
 	# 		at 0.1 since they share a couple of sparse observations and concordant missing observations
 	pDists[np.where((df_noNans > 0) & (df_noNans < 3) & ((num_cols - df_noNans) <= df_bothNans) & (mDists >= 1e-2))] = 0.1
+
+	# Remaining nan values in pDists should be coming from situations in which either one or both rows of observations
+	# consist of multiple observations of the exact same value (likely 0.0), making the denominator in the Pearson
+	# Coefficient 0. If Manhattan distance is close enough, set pDist = 0 if not set to max_distance / 2
+	pDists[np.where(np.where(np.isnan(pDists)) & (mDists < 1e-2))] = 0.0
+	pDists[np.where(np.where(np.isnan(pDists)) & (mDists >= 1e-2))] = max_distance / 2.0
 	
 	# Calculate the retention-time portio of the metric. Again, ignoring NaN cells in the calculation
 	rDists = np.round(np.sqrt( sklearn.metrics.pairwise.nan_euclidean_distances(df_sorted_rts.values, squared = True) / num_cols), 3)
