@@ -99,12 +99,24 @@ print('done...%s' % str(datetime.now() - time_stamp))
 ################################################################################
 # Calculate Linkage
 ################################################################################
+# The linkage is calculated based on a custom distance metric. For two XCMS
+# features, fi and fj, we calculate the distance metric as:
+#					d(fi, fj) = (1 - Rij) + ( alpha * (1 - exp(-pij / tau)) ) 
+# where Rij is the pearson correlation distance between fi and fj intensities
+# across samples (in overlapping samples only). And pij looks at the retention
+# time distance between fi and fj pairwise calculated across overlapping samples:
+#					pij = sqrt( (1 / n) * sum(tik - tjk)^2)
+# where tik is fi's retention time for sample k. 
+################################################################################
 time_stamp = datetime.now()
 print('########################################################################')
 print('Calculating linkage... %s' % time_stamp)
 print('########################################################################')
 sys.stdout.flush()
 
+# Calculation of the pairwise distance matrix for our custom 
+# metric. Currently optimized for runtime, not memory usage. Requires large
+# amounts of RAM for feature sets that are too large
 def get_dist_mat(df_sorted_intensities, df_sorted_rts, max_distance):
 	if df_sorted_intensities.shape != df_sorted_rts.shape:
 		sys.exit(f"Error in dist_mat - df_sorted_intensities shape {df_sorted_intensities.shape} must be equal to df_sorted_rts shape {df_sorted_rts.shape}")
@@ -176,6 +188,11 @@ print('done...%s' % str(datetime.now() - time_stamp))
 ################################################################################
 # Find clusters
 ################################################################################
+# Now that we have a linkage tree (hierarchical clustering dendrogram), can 
+# compute the tree cuts to find the initial clusters. Clusters are defined as 
+# tree cuts where args.frac_peaks of the resulting leaves are within 
+# args.rt_1sWindow of the root RT (defined by rt_distance())
+################################################################################
 time_stamp = datetime.now()
 print('########################################################################')
 print('Finding clusters... %s' % time_stamp)
@@ -196,15 +213,14 @@ _ = tree.pre_order(lambda leaf : set_rt(leaf, df_sorted_rts))
 # on the df_sorted_intensities values
 leaf_list = sorted(tree.pre_order(lambda leaf : (leaf.id, leaf.rt)), key = lambda tup : tup[0])
 
+# The retention time distance between two features is found using the median absolute 
+# difference between RTs for features across all samples. If two features do not 
+# have any overlapping samples, rt_distance is defined using args.rt_1sWindow
 def rt_distance(rts1, rts2):
 	with warnings.catch_warnings():
 		warnings.simplefilter("ignore", category=RuntimeWarning)
 		r = np.nan_to_num(np.nanmedian(np.abs(rts1 - rts2)), nan = args.rt_1sWindow + 1.0)
 	return(r)
-	# locs = np.where(~np.isnan(rts1.astype(float)) & ~np.isnan(rts2.astype(float)))[0]
-	# if len(locs) == 0:
-		# return(args.rt_1sWindow + 1.0)
-	# return(np.median(np.abs(rts1[locs].astype(float) - rts2[locs].astype(float))))
 
 # Recursive function for getting all the cuts
 def get_cuts(tree, rt_1sWindow, frac_peaks):
@@ -212,13 +228,19 @@ def get_cuts(tree, rt_1sWindow, frac_peaks):
 	current_rt = leaf_list[0][1]
 	good_peaks = np.sum([rt_distance(current_rt, x[1]) <= rt_1sWindow for x in leaf_list]) / len(leaf_list)
 	
+	# If we are far enough down the tree where the reuslting sub-tree contains "good peaks" above the 
+	# desired fraction (frac_peaks), then stop here and return the current sub-tree
 	if good_peaks >= frac_peaks:
 		parent_id = leaf_list[0][0]
 		cluster_ids = [x[0] for x in leaf_list]
 		return([(parent_id, cluster_ids)])
+	# If we're not far enough down the tree to hit the stopping criterion, keep going down the tree and 
+	# return the sub-trees found for the left- and right- calls
 	else:
 		return(get_cuts(tree.get_right(), rt_1sWindow, frac_peaks) + get_cuts(tree.get_left(), rt_1sWindow, frac_peaks))
 
+# Starting at the top, find all the cuts that satisfy the stopping criterion (trees where args.frac_peaks are within 
+# args.rt_1sWindow of the root defined using rt_distance)
 cut_ids = get_cuts(tree, rt_1sWindow = args.rt_1sWindow, frac_peaks = args.frac_peaks)
 clusters = [(df_sorted_intensities.index[p_id], p_id, clust_ids, [df_sorted_intensities.index[i] for i in clust_ids]) for p_id, clust_ids in cut_ids]
 
@@ -229,21 +251,19 @@ print('done...%s' % str(datetime.now() - time_stamp))
 ################################################################################
 # Merge Clusters
 ################################################################################
+# Using the cuts found above, translate them into clusters, saivng feature mz 
+# and rt information
+################################################################################
 time_stamp = datetime.now()
 print('########################################################################')
 print('Merging clusters... %s' % time_stamp)
 print('########################################################################')
 sys.stdout.flush()
 
-# remaining_peaks = [x for x in df_cuts['peak_name']]
+
 clusters = []
 for i_p, peak_name in enumerate(tqdm(df_cuts['peak_name'])):
 	p_clust = df_cuts['cluster_subtree_names'].values[i_p]
-	# p_clust = [x for x in p_clust if x in remaining_peaks]
-	# if len(p_clust) == 0:
-		# continue
-	# for p in p_clust:
-		# remaining_peaks.remove(p)
 	
 	clust_size = len(p_clust)
 	clust_intensities = []
@@ -264,6 +284,12 @@ df_merged.to_csv(os.path.join(args.intermediate_files_dir, args.out_prefix + '_M
 print('done...%s' % str(datetime.now() - time_stamp))
 ################################################################################
 # Finalize Clusters
+################################################################################
+# For every cluster, kick out extreme RT outliers 
+# (defined by args.cluster_outlier_1swidth). Also, if there exists some leaf
+# with an m/z greater than the cluster's parent and at least 
+# args.parent_mz_check_intensity_frac percent of the parent's intensity, 
+# make that the new cluster parent
 ################################################################################
 time_stamp = datetime.now()
 print('########################################################################')
@@ -286,7 +312,6 @@ for i_p, parent_peak in enumerate(tqdm(df_merged['parent_peak'])):
 
 	keep_indices = [(r >= lb and r <= ub) for r in clust_rts] 
 
-	# Still need to keep track of dropped peaks
 	dropped = [(i, c) for i, c in enumerate(clust) if not keep_indices[i]]
 
 	# Kept Cluster
@@ -301,6 +326,9 @@ for i_p, parent_peak in enumerate(tqdm(df_merged['parent_peak'])):
 	parent_peak = clust[parent_index]
 	parent_mz = clust_mzs[parent_index]
 
+	# Make sure we can get through the entire cluster without running into
+	# a cluster child that should be the new parent (higher m/z than parent
+	# and high enough intensity)
 	restart = True
 	while restart:
 		restart = False
@@ -319,10 +347,9 @@ for i_p, parent_peak in enumerate(tqdm(df_merged['parent_peak'])):
 
 	
 
-	
-
 	############################################################################
-	# Old implementation = every dropped element automatically becomes its own cluster.
+	# Current implementation = every dropped element automatically becomes 
+	# its own cluster
 	############################################################################
 	for i_dpn, dpn in dropped:
 		dropped_clust = [dpn]
@@ -342,6 +369,11 @@ df_clusters = pd.DataFrame(clusters, columns=['parent_peak', 'cluster', 'clust_i
 print('done...%s' % str(datetime.now() - time_stamp))
 ################################################################################
 # Recursive Clustering
+################################################################################
+# Iteratively re-compute clusters using the same scheme as described above 
+# using only the current parents. If two parents cluster together, merge
+# their respective clusters. Continue until the resulting number of clusters
+# remains stable
 ################################################################################
 time_stamp = datetime.now()
 print('########################################################################')
@@ -363,6 +395,12 @@ df_clusters = pd.DataFrame(df_clusters.set_index('parent_peak', drop = False))
 ######################################
 # Recursive Clustering
 ######################################
+# This contains some duplicate code
+# from above during the recursive rounds.
+# Should refactor everything into
+# function calls
+######################################
+
 recursive_round_num = 1
 while not args.no_recursive_clustering:
 
@@ -376,12 +414,9 @@ while not args.no_recursive_clustering:
 	linkage = get_linkage(df_sorted_intensities_rec, df_sorted_rts_rec, max_distance = 2 + args.alpha)
 	tree = scipy.cluster.hierarchy.to_tree(linkage)
 
-	# pre-compute the rts and save them to leaf objects in tree
-# 	tree.pre_order(lambda leaf : set_rt(leaf, df_sorted_merged))
 	tree.pre_order(lambda leaf : set_rt(leaf, df_sorted_rts_rec))
 
-	# indices already correspond to intensity sort order since linkage was calculated
-	# on the df_sorted_intensities values
+	
 	leaf_list = sorted(tree.pre_order(lambda leaf : (leaf.id, leaf.rt)), key = lambda tup : tup[0])
 	cut_ids = get_cuts(tree, rt_1sWindow = args.rt_1sWindow, frac_peaks = args.frac_peaks)
 
@@ -398,7 +433,6 @@ while not args.no_recursive_clustering:
 		for p in p_clust:
 			clust_mzs.append(df.loc[p]['mzmed'])
 			clust_intensities.append(df_sorted_intensities.loc[p].to_dict())
-			# clust_rts.append(df_sorted_rts.loc[p]['rtmed'])
 			clust_rts.append(df.loc[p]['rtmed'])
 
 		clusters.append((peak_name, p_clust, clust_intensities, clust_mzs, clust_rts, clust_size))
@@ -419,10 +453,8 @@ while not args.no_recursive_clustering:
 
 		keep_indices = [(r >= lb and r <= ub) for r in clust_rts] 
 
-		# Still need to keep track of dropped peaks
 		dropped = [(i, c) for i, c in enumerate(clust) if not keep_indices[i]]
 
-		# Kept Cluster
 		clust = [c for i, c in enumerate(clust) if keep_indices[i]]
 		clust_intensities = [d for i, d in enumerate(df_merged['clust_intensities'].values[i_p]) if keep_indices[i]]
 		clust_mzs = [d for i, d in enumerate(df_merged['clust_mzs'].values[i_p]) if keep_indices[i]]
@@ -431,7 +463,6 @@ while not args.no_recursive_clustering:
 
 		clust_avg_intensities = [np.mean(df[args.sample_names].fillna(value = 0.0).loc[x]) for x in clust]
 		parent_index = np.argmax(clust_avg_intensities)
-		# parent_index = np.argmax([np.mean(list(x.values())) for x in clust_intensities])
 		parent_peak = clust[parent_index]
 		parent_mz = clust_mzs[parent_index]
 
@@ -498,9 +529,11 @@ print('done...%s' % str(datetime.now() - time_stamp))
 ################################################################################
 # Normalize peaks
 ################################################################################
+# Normalize the peak intensity values according to the provided 
+# normalization file (if one is provided)
+################################################################################
 df_clusters = df_clusters.set_index('parent_peak', drop = False)
 df_clusters.insert(0, 'cluster_id', [i for i,_ in enumerate(df_clusters['cluster'])])
-# s = df_clusters.apply(lambda x : pd.Series(ast.literal_eval(x['cluster'])), axis = 1).stack().reset_index(level=1, drop=True)
 s = df_clusters.apply(lambda x : pd.Series(x['cluster']), axis = 1).stack().reset_index(level=1, drop=True)
 s.name = 'name'
 df_joined = df_clusters.join(s).drop(labels = ['clust_intensities', 'clust_rts', 'clust_mzs'], axis = 1).set_index('name')
@@ -519,7 +552,6 @@ if args.normalization_tsv != None:
 		lines = [x.strip().split('\t') for x in f.readlines()]
 	normalization_dict = {x[0] : float(x[1]) for x in lines}
 
-
 	split_int_cols = True
 	if len(set(normalization_dict.keys()).symmetric_difference(set([os.path.splitext(x)[0] for x in args.sample_names]))) > 0:
 		if len(set(normalization_dict.keys()).symmetric_difference(set(args.sample_names))) == 0:
@@ -529,7 +561,6 @@ if args.normalization_tsv != None:
 			print('args.sample_names columns: %s' % str(args.sample_names))
 			sys.exit('Error - normalization file must contain the same columns supplied by args.sample_names')
 
-	# for k in normalization_dict.keys():
 	for x in args.sample_names:
 		if split_int_cols:
 			k = os.path.splitext(x)[0]
@@ -543,23 +574,23 @@ if args.normalization_tsv != None:
 ################################################################################
 # Fix report values - i.e. log transform etc
 ################################################################################
+# Calculate feature intensity means and rt means for the output report. ALso
+# make sure that the order of the samples in the output report corresponds 
+# to the order passed in. 
+################################################################################
 time_stamp = datetime.now()
 print('########################################################################')
 print('Prettifying output... %s' % time_stamp)
 print('########################################################################')
 sys.stdout.flush()
 
-# df_out = df_normalized.copy().drop(labels = mz_cols, axis = 1)
 df_out = df_normalized.copy()
-
 
 u_cols = [x for x in df_out.columns if 'Unnamed:' in x]
 if len(u_cols) > 0:
 	df_out = df_out.drop(labels = u_cols, axis = 1)
 
 clust_size_index = list(df_out.columns).index('clust_size') + 1
-# df_out.insert(clust_size_index, 'rt_mean', df_sorted_merged_backup[rt_cols].mean(axis = 1).reindex(df_out.index))
-# df_out.insert(clust_size_index, 'intensity_mean', df_out[intensity_cols].fillna(0.0).mean(axis = 1))
 df_out.insert(clust_size_index, 'rt_mean', df_sorted_rts.mean(axis = 1).loc[df_out.index])
 df_out.insert(clust_size_index, 'intensity_mean', df_out[args.sample_names].fillna(0.0).mean(axis = 1))
 
@@ -577,12 +608,16 @@ df_out = pd.concat([df_out_temp, pd.DataFrame(df_out[args.sample_names + args.rt
 
 mz_cols = [x.replace('rt_', 'mz_') for x in args.rt_cols]
 df_out = pd.concat([df_out[[x for x in df_out.columns if x not in mz_cols]], df_out[mz_cols]], axis = 1)
-
-
 	
 print('done...%s' % str(datetime.now() - time_stamp))
 ################################################################################
 # Run statistics
+################################################################################
+# Calculate cluster statistics if an args.stats_tsv file is passed in. 
+# Meant for running the Mann-Whitney test between two conditions
+# then for calculating the Q values for the parent peaks (false discovery rate
+# correction). The sample names that define the two conditions can be passed in 
+# and multiple tests can be run for different condition splits
 ################################################################################
 if args.stats_tsv != None:
 
@@ -648,10 +683,7 @@ if args.stats_tsv != None:
 	df_out = pd.concat([df_out[[x for x in df_out.columns if x not in data_cols]], df_out[data_cols]], axis = 1)
 
 
-
 	print('done...%s' % str(datetime.now() - time_stamp))
-
-
 
 
 ################################################################################

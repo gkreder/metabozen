@@ -1,6 +1,10 @@
 ################################################################################
 # Gabe Reder - gkreder@gmail.com
 ################################################################################
+# This is the same code in clustering.py, but for personal debugging use
+# (taking inputs as command line arguments rather than parsing an input 
+# file)
+################################################################################
 import pickle as pkl
 import sys
 import os

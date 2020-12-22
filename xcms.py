@@ -1,6 +1,8 @@
 ################################################################################
 # Gabe Reder - gkreder@gmail.com
 ################################################################################
+# A python wrapper for running XCMS on input data (using XCMS 3 syntax)
+################################################################################
 import sys
 import os
 import pandas as pd
@@ -18,6 +20,7 @@ args = parser.parse_args()
 df = pd.read_excel(args.in_file, index_col = 0, names = ['name', 'value'], header = None)
 out_dir = os.path.dirname(df.loc['out_tsv'].value)
 os.system(f'mkdir -p {out_dir}')
+# Create a random suffix for the temporary R file
 hash_tag = str(int(hashlib.sha256(df.loc['out_tsv'].value.encode('utf-8')).hexdigest(), 16) % 10**12)
 
 out_string = ""
@@ -31,6 +34,7 @@ out_string += f'''library(xcms)
 library(plyr)
 library(dplyr)
 library(stringr)
+options(dplyr.summarise.inform = FALSE)
 BiocParallel::register(BiocParallel::SerialParam())
 files <- c({files})
 sample_names <- c({sample_names})
