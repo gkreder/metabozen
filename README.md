@@ -9,7 +9,7 @@ runs our parent-ion identification clustering pipeline on it.
 
 All of the dependencies for running both XCMS and the clustering pipeline are contained in the docker image [gkreder/py_metab](https://hub.docker.com/r/gkreder/py_metab). In fact, this same code itself is also located in that docker image in the directory /home/pymetab so the whole thing could just be run by pulling the docker image and running a container - no need to clone this repo if you don't want to. 
 
-If you would like to try running the pipeline and seeing the output, you could try running (from inside /home/pymetab):
+If you would like to try running the pipeline and seeing the output, you could try running (from inside /home/pymetab):   
 ```python clustering.py --in_file clustering.xlsx```
 
 Right now, the pipeline has a high memory overhead. The run on this example data should require about 8GB of RAM and about 10 minutes. Making overhead lower is on the list of improvements but hasn't been a priority since memory is not an issue on the servers we use. 
@@ -22,6 +22,7 @@ d(f_i, f_j) = (1- R_{i, j} + \alpha (1 - \exp(-\rho_{i, j} / \tau)))
 \rho_{i, j} = \sqrt{\frac{1}{n} \sum_{k = 1}^{n} (t_{i,k} - t_{j, k})^2}
 
 ```
+<img src="https://render.githubusercontent.com/render/math?math=d(f_i, f_j) = (1- R_{i, j} + \alpha (1 - \exp(-\rho_{i, j} / \tau)))">
 
 
 ## 201101 - For Jakub
