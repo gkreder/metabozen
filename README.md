@@ -15,7 +15,7 @@ If you would like to try running the pipeline and seeing the output, you could t
 
 Right now, the pipeline has a high memory overhead. The run on this example data should require about 8GB of RAM and about 10 minutes. Making overhead lower is on the list of improvements but hasn't been a priority since memory is not an issue on the servers we use. 
 
-Very briefly, the pipeline clusters XCMS features into groups ideally coming from a single parent ion or a couple of closely related ones. The clustering involves first computing a hierarchical clustering on the features using a distance metric we wrote. For two features f_i and f_j we have a distance of 
+Very briefly, the pipeline clusters XCMS features into groups. Ideally the features in these groups come from a single parent ion or a couple of closely related ones. The clustering involves first computing a hierarchical dendrogram on the features using a distance metric we wrote. For two features f_i and f_j we have a distance of 
 
 <p align="center">
 <img src="https://render.githubusercontent.com/render/math?math=d(f_i,f_j) = (1- R_{i,j}) %2B \alpha \left(1 - \exp\left(\frac{-\rho_{i,j}}{\tau}\right)\right)">
