@@ -4,6 +4,8 @@
 
 I've been using this repo to share code with my experimental collaborator (Jakub, who is on here as well). I should note that this code has been written for Jakub to be able to run the pipeline, changing inputs and parameters without having to touch much command line or code. With that in mind, the way it's currently run is by editing the input .xlsx files then running the python commands below. It's not quite camera-ready, but hopefully should be readable. 
 
+The public repos on my GitHub are mostly left over from various hanging projects and classes, most of them are not cleaned up for public consumption (on my to-do list...) However, if you'd like to take a look at more code samples or projects I'd be happy to arrange that. This repo just happens to be one that I've been working on cleaning up with Jakub. 
+
 The xcms.py script is just a Python wrapper around XCMS. The bulk of the code is contained in clustering.py which takes in XCMS feature output and
 runs our parent-ion identification clustering pipeline on it. 
 
