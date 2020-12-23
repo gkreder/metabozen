@@ -19,6 +19,7 @@ Very briefly, the pipeline clusters XCMS features into groups ideally coming fro
 
 <p align="center">
 <img src="https://render.githubusercontent.com/render/math?math=d(f_i,f_j) = (1- R_{i,j}) %2B \alpha \left(1 - \exp\left(\frac{-\rho_{i,j}}{\tau}\right)\right)">    
+
 <img src="https://render.githubusercontent.com/render/math?math=\rho_{i,j} = \sqrt{\frac{1}{n} \sum_{k = 1}^{n} (t_{i,k} - t_{j,k})^2}">    
 <img src="https://render.githubusercontent.com/render/math?math=R_{i,j} = \text{Pearson Correlation between feature i and feature j calculated across overlapping samples}">    
 <img src="https://render.githubusercontent.com/render/math?math=t_{i,k} = \text{Retention time of feature i for sample k}">  
