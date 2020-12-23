@@ -17,10 +17,12 @@ Right now, the pipeline has a high memory overhead. The run on this example data
 
 Very briefly, the pipeline clusters XCMS features into groups ideally coming from a single parent ion or a couple of closely related ones. The clustering involves first computing a hierarchical clustering on the features using a distance metric we wrote. For two features f_i and f_j we have a distance of 
 
+<div style="text-align:center">
 <img src="https://render.githubusercontent.com/render/math?math=d(f_i,f_j) = (1- R_{i,j}) %2B \alpha \left(1 - \exp\left(\frac{-\rho_{i,j}}{\tau}\right)\right)" class="center">    
 <img src="https://render.githubusercontent.com/render/math?math=\rho_{i,j} = \sqrt{\frac{1}{n} \sum_{k = 1}^{n} (t_{i,k} - t_{j,k})^2}" class="center">    
 <img src="https://render.githubusercontent.com/render/math?math=R_{i,j} = \text{Pearson Correlation between feature i and feature j calculated across overlapping samples}" class="center">    
-<img src="https://render.githubusercontent.com/render/math?math=t_{i,k} = \text{Retention time of feature i for sample k}" class="center">    
+<img src="https://render.githubusercontent.com/render/math?math=t_{i,k} = \text{Retention time of feature i for sample k}" class="center">  
+</div>   
 
 Tree cuts are computed on this dendrogram by traversing down the tree and cutting at points where the resulting sub-trees satisfy the condition that at least *frac_peaks* (default = 0.8) of the children are within *rt_1sWindow* (default = 5 seconds) of the sub-tree root. After this, some filtering is done by removing cluster outliers and reassigning cluster parents when there exists some cluster child with a higher m/z and at least *parent_mz_check_intensity_frac* (default = 0.6) average intensity compared to the current parent. 
 
