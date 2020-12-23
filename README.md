@@ -2,7 +2,7 @@
 
 ## 201222 - For Caroline and Payam
 
-I have been using this repo to share code with my experimental collaborator (Jakub, who is on here as well). I should note that this code has been written for Jakub to be able to run the pipeline, changing inputs and parameters without having to touch much command line or code. With that in mind, the way it's currently run is by editing the input .xlsx files then running the python commands below. It's not quite camera-ready, but hopefully should be readable. 
+I've been using this repo to share code with my experimental collaborator (Jakub, who is on here as well). I should note that this code has been written for Jakub to be able to run the pipeline, changing inputs and parameters without having to touch much command line or code. With that in mind, the way it's currently run is by editing the input .xlsx files then running the python commands below. It's not quite camera-ready, but hopefully should be readable. 
 
 The xcms.py script is just a Python wrapper around XCMS. The bulk of the code is contained in clustering.py which takes in XCMS feature output and
 runs our parent-ion identification clustering pipeline on it. 
