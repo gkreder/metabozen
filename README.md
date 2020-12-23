@@ -7,7 +7,7 @@ I've been using this repo to share code with my experimental collaborator (Jakub
 The xcms.py script is just a Python wrapper around XCMS. The bulk of the code is contained in clustering.py which takes in XCMS feature output and
 runs our parent-ion identification clustering pipeline on it. 
 
-All of the dependencies for running both XCMS and the clustering pipeline are contained in the docker image [gkreder/py_metab](https://hub.docker.com/r/gkreder/py_metab). In fact, this same code itself is also located in that docker image in the directory /home/pymetab so the whole thing could just be run by pulling the docker image and running a container - no need to clone this repo if you don't want to. 
+All of the dependencies for running both XCMS and the clustering pipeline are contained in the docker image [gkreder/py_metab](https://hub.docker.com/r/gkreder/py_metab). In fact, this same code itself is also located in that docker image in the directory `/home/pymetab` so the whole thing could just be run by pulling the docker image and running a container - no need to clone this repo if you don't want to. 
 
 If you would like to try running the pipeline and seeing the output, you could try running (from inside /home/pymetab): 
 
