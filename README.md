@@ -22,9 +22,9 @@ d(f_i, f_j) = (1- R_{i, j} + \alpha (1 - \exp(-\rho_{i, j} / \tau)))
 \rho_{i, j} = \sqrt{\frac{1}{n} \sum_{k = 1}^{n} (t_{i,k} - t_{j, k})^2}
 
 ```
-<img src="https://render.githubusercontent.com/render/math?math=d(f_i, f_j) = (1- R_{i, j} + \alpha (1 - \exp(-\rho_{i, j} / \tau)))">    
-<img src="https://render.githubusercontent.com/render/math?math=\rho_{i, j} = \sqrt{\frac{1}{n} \sum_{k = 1}^{n} (t_{i,k} - t_{j, k})^2}">    
-<img src="https://render.githubusercontent.com/render/math?math=t_{i, k} = \text{Retention time of feature $i$ for sample $k$}">    
+<img src="https://render.githubusercontent.com/render/math?math=d(f_i,f_j) = (1- R_{i,j} + \alpha (1 - \exp(-\rho_{i,j} / \tau)))">    
+<img src="https://render.githubusercontent.com/render/math?math=\rho_{i,j} = \sqrt{\frac{1}{n} \sum_{k = 1}^{n} (t_{i,k} - t_{j,k})^2}">    
+<img src="https://render.githubusercontent.com/render/math?math=t_{i,k} = \text{Retention time of feature i for sample k}">    
 
 
 
