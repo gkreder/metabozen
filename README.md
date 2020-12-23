@@ -18,11 +18,15 @@ Right now, the pipeline has a high memory overhead. The run on this example data
 Very briefly, the pipeline clusters XCMS features into groups ideally coming from a single parent ion or a couple of closely related ones. The clustering involves first computing a hierarchical clustering on the features using a distance metric we wrote. For two features f_i and f_j we have a distance of 
 
 <p align="center">
-<img src="https://render.githubusercontent.com/render/math?math=d(f_i,f_j) = (1- R_{i,j}) %2B \alpha \left(1 - \exp\left(\frac{-\rho_{i,j}}{\tau}\right)\right)">    </p>
-
+<img src="https://render.githubusercontent.com/render/math?math=d(f_i,f_j) = (1- R_{i,j}) %2B \alpha \left(1 - \exp\left(\frac{-\rho_{i,j}}{\tau}\right)\right)">
+</p>
 <p align="center">
 <img src="https://render.githubusercontent.com/render/math?math=\rho_{i,j} = \sqrt{\frac{1}{n} \sum_{k = 1}^{n} (t_{i,k} - t_{j,k})^2}">    
+</p>
+<p align="center">
 <img src="https://render.githubusercontent.com/render/math?math=R_{i,j} = \text{Pearson Correlation between feature i and feature j calculated across overlapping samples}">    
+</p>
+<p align="center">
 <img src="https://render.githubusercontent.com/render/math?math=t_{i,k} = \text{Retention time of feature i for sample k}">  
 </p>
 
