@@ -14,6 +14,7 @@ parser = argparse.ArgumentParser()
 
 # Required file and parameter inputs 
 parser.add_argument('--in_file', required = True)
+parser.add_argument('--debug', action = 'store_true')
 args = parser.parse_args()
 ################################################################################
 
@@ -41,9 +42,9 @@ sample_names <- c({sample_names})
 sample_groups <- c({sample_groups})
 pd <- data.frame(sample_name = sample_names, sample_group = sample_groups, stringsAsFactors = FALSE)
 raw_data <- readMSData(files = files, pdata = new("NAnnotatedDataFrame", pd), mode = "onDisk")
-cwp <- CentWaveParam(ppm = {df.loc['centwave_ppm'].value}, mzdiff = {df.loc['centwave_mzdiff'].value}, integrate = {df.loc['centwave_integrate'].value}, fitgauss = {df.loc['centwave_fitgauss'].value}, noise = {df.loc['centwave_noise'].value}, peakwidth=c({df.loc['centwave_peakwidth'].value}), prefilter = c({df.loc['centwave_prefilter'].value}), snthresh = {df.loc['centwave_snthresh'].value}, mzCenterFun = "{df.loc['centwave_mzCenterFun'].value}")
+cwp <- CentWaveParam(ppm = {float(df.loc['centwave_ppm'].value)}, mzdiff = {float(df.loc['centwave_mzdiff'].value)}, integrate = {int(df.loc['centwave_integrate'].value)}, fitgauss = {str(df.loc['centwave_fitgauss'].value).upper()}, noise = {float(df.loc['centwave_noise'].value)}, peakwidth=c({df.loc['centwave_peakwidth'].value}), prefilter = c({df.loc['centwave_prefilter'].value}), snthresh = {float(df.loc['centwave_snthresh'].value)}, mzCenterFun = "{df.loc['centwave_mzCenterFun'].value}")
 xdata <- findChromPeaks(raw_data, param = cwp)
-owp <- ObiwarpParam(factorGap = {df.loc['obiwarp_factorGap'].value} , binSize = {df.loc['obiwarp_binSize'].value}, factorDiag = {df.loc['obiwarp_factorDiag'].value} , distFun = "{df.loc['obiwarp_distFun'].value}", response = {df.loc['obiwarp_response'].value} , localAlignment = FALSE, initPenalty = {df.loc['obiwarp_initPenalty'].value} )
+owp <- ObiwarpParam(factorGap = {float(df.loc['obiwarp_factorGap'].value)} , binSize = {float(df.loc['obiwarp_binSize'].value)}, factorDiag = {float(df.loc['obiwarp_factorDiag'].value)} , distFun = "{df.loc['obiwarp_distFun'].value}", response = {float(df.loc['obiwarp_response'].value)} , localAlignment = FALSE, initPenalty = {float(df.loc['obiwarp_initPenalty'].value)} )
 pdp <- PeakDensityParam(sampleGroups = xdata$sample_group, minSamples = {df.loc['density_minSamples'].value}, minFraction = {df.loc['density_minFraction'].value}, binSize = {df.loc['density_binSize'].value}, bw = {df.loc['density_bw'].value}, maxFeatures = {df.loc['density_maxFeatures'].value})
 xdata <- adjustRtime(xdata, param=owp)
 xdata <- groupChromPeaks(xdata, param = pdp)
@@ -122,8 +123,13 @@ cpData <- write.table(cpData, '{df.loc['out_tsv'].value.replace('.tsv', '_CPDATA
 saveRDS(xdata, file = '{df.loc['out_tsv'].value.replace('.tsv', '_XCMSSET.rds')}')
 '''
 
-with open(f"xcms_{hash_tag}.R", 'w') as f:
+r_fname = os.path.join(out_dir, f"xcms_{hash_tag}.R")
+params_fname = os.path.join(out_dir, f"params_{has_tag}.log")
+with open(params_fname, 'w') as f:
+	print(args, file = f)
+with open(r_fname, 'w') as f:
     print(out_string, file = f)
-os.system(f"Rscript xcms_{hash_tag}.R")
-os.system(f"rm xcms_{hash_tag}.R")
+os.system(f"Rscript {r_fname}")
+if not args.debug:
+	os.system(f"rm {r_fname}")
 

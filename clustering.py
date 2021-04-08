@@ -649,7 +649,9 @@ if args.stats_tsv != None:
 		stats = ['not calc' for i in range(len(df))]
 		pvals = ['not calc' for i in range(len(df))]
 		for i in tqdm(range(len(df_out))):
-			if not paired:
+			if (df_out.iloc[i][cols2].isnull().all() & df_out.iloc[i][cols1].isnull().all()): 
+				stat, pval = scipy.stats.mannwhitneyu([1e-11, 0, 0], [1e-11, 0], alternative = 'two-sided')
+			elif not paired:
 				stat, pval = scipy.stats.mannwhitneyu(df_out.iloc[i][cols1].fillna(value = 0.0), df_out.iloc[i][cols2].fillna(value = 0.0), alternative = 'two-sided')
 			else:
 				stat, pval = scipy.stats.wilcoxon(df_out.iloc[i][cols1].fillna(value = 0.0), df_out.iloc[i][cols2].fillna(value = 0.0), mode = 'exact')
