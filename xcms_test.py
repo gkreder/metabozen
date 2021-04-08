@@ -305,7 +305,6 @@ with open(params_fname, 'w') as f:
 	print(args, file = f)
 with open(r_fname, 'w') as f:
     print(out_string, file = f)
-sys.exit()
 os.system(f"Rscript {r_fname}")
 if not args.debug:
 	os.system(f"rm {r_fname}")
