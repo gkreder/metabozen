@@ -29,16 +29,19 @@ def prefilter_format(s):
 ################################################################################
 parser = argparse.ArgumentParser()
 
+
 subparsers = parser.add_subparsers(dest = 'input_type', required = True)
 
 parser_file = subparsers.add_parser('file')
 parser_file.add_argument('--in_file', required = True)
+parser_file.add_argument('--debug', action = 'store_true')
 
 parser_args = subparsers.add_parser('args')
 ################################################
 # top-level parameters
 ################################################
 # parser_args.add_argument('--data_dir', required = True)
+parser_args.add_argument('--debug', action = 'store_true')
 parser_args.add_argument('--in_files', required = True, help = 'Comma separated list of input files', type = str)
 parser_args.add_argument('--out_tsv', required = True, type = str)
 # parser_args.add_argument('--polarity', required = True, choices = ['positive', 'negative'])
@@ -153,7 +156,6 @@ parser_args.add_argument('--obiwarp_initPenalty', default = 0, type = float)
 
 # Required file and parameter inputs 
 # parser.add_argument('--in_file', required = True)
-parser.add_argument('--debug', action = 'store_true')
 args = parser.parse_args()
 ################################################################################
 float_args = ["centwave_ppm", 'centwave_mzdiff', 'centwave_noise', 'obiwarp_factorGap', 'obiwarp_binSize', 'obiwarp_factorDiag', 'obiwarp_response', 'obiwarp_initPenalty']
