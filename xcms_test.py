@@ -193,7 +193,9 @@ if args.input_type == 'file':
 else:
 	# files = args.in_files
 	sample_names = args.sample_names
+	sample_names = ','.join([f'''"{x}"''' for x in sample_names.split(',')])
 	sample_groups = args.sample_groups
+	sample_groups = ','.join([f'''"{x}"''' for x in sample_groups.split(',')])
 files = ','.join([f'''"{x}"''' for x in args.in_files.split(',')])
 
 hash_tag = str(int(hashlib.sha256(args.out_tsv.encode('utf-8')).hexdigest(), 16) % 10**12)
