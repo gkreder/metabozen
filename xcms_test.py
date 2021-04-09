@@ -35,6 +35,7 @@ subparsers = parser.add_subparsers(dest = 'input_type', required = True)
 parser_file = subparsers.add_parser('file')
 parser_file.add_argument('--in_file', required = True)
 parser_file.add_argument('--debug', action = 'store_true')
+parser_file.add_argument('--multicore', action = 'store_true')
 
 parser_args = subparsers.add_parser('args')
 ################################################
@@ -42,6 +43,7 @@ parser_args = subparsers.add_parser('args')
 ################################################
 # parser_args.add_argument('--data_dir', required = True)
 parser_args.add_argument('--debug', action = 'store_true')
+parser_args.add_argument('--multicore', action = 'store_true')
 parser_args.add_argument('--in_files', required = True, help = 'Comma separated list of input files', type = str)
 parser_args.add_argument('--out_tsv', required = True, type = str)
 # parser_args.add_argument('--polarity', required = True, choices = ['positive', 'negative'])
@@ -206,6 +208,10 @@ if out_dir == '':
 os.system(f'mkdir -p {out_dir}')
 # Create a random suffix for the temporary R file
 out_string = ""
+if args.multicore:
+	multicore_string = ''
+else:
+	multicore_string = "BiocParallel::register(BiocParallel::SerialParam())"
 # xdata <- adjustRtime(xdata, param=owp)
 # xdata <- groupChromPeaks(xdata, param = pdp)
 # xdata <- adjustRtime(xdata, param=owp)
@@ -218,7 +224,7 @@ library(plyr)
 library(dplyr)
 library(stringr)
 options(dplyr.summarise.inform = FALSE)
-BiocParallel::register(BiocParallel::SerialParam())
+{multicore_string}
 files <- c({files})
 sample_names <- c({sample_names})
 sample_groups <- c({sample_groups})
