@@ -232,8 +232,8 @@ pd <- data.frame(sample_name = sample_names, sample_group = sample_groups, strin
 raw_data <- readMSData(files = files, pdata = new("NAnnotatedDataFrame", pd), mode = "onDisk")
 cwp <- CentWaveParam(ppm = {args.centwave_ppm}, mzdiff = {args.centwave_mzdiff}, integrate = {args.centwave_integrate}, fitgauss = {args.centwave_fitgauss}, noise = {args.centwave_noise}, peakwidth=c{args.centwave_peakwidth}, prefilter = c{args.centwave_prefilter}, snthresh = {args.centwave_snthresh}, mzCenterFun = "{args.centwave_mzCenterFun}")
 owp <- ObiwarpParam(factorGap = {args.obiwarp_factorGap} , binSize = {args.obiwarp_binSize}, factorDiag = {args.obiwarp_factorDiag} , distFun = "{args.obiwarp_distFun}", response = {args.obiwarp_response} , localAlignment = FALSE, initPenalty = {args.obiwarp_initPenalty} )
-pdp <- PeakDensityParam(sampleGroups = xdata$sample_group, minSamples = {args.density_minSamples}, minFraction = {args.density_minFraction}, binSize = {args.density_binSize}, bw = {args.density_bw}, maxFeatures = {args.density_maxFeatures})
 xdata <- findChromPeaks(raw_data, param = cwp)
+pdp <- PeakDensityParam(sampleGroups = xdata$sample_group, minSamples = {args.density_minSamples}, minFraction = {args.density_minFraction}, binSize = {args.density_binSize}, bw = {args.density_bw}, maxFeatures = {args.density_maxFeatures})
 {grouping_string}
 xdata <- fillChromPeaks(xdata)
 fd <- featureDefinitions(xdata)
