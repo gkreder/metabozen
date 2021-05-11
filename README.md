@@ -1,7 +1,5 @@
 # PyMetab
 
-## 201101 - For Jakub
-
 To launch Docker, from your docker Powershell:
 ```docker run -it -v <DATA_DIRECTORY>:/home/data/ <SCRIPTS_DIRECTORY>:/home/scripts gkreder/py_metab bash```
 
