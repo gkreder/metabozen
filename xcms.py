@@ -124,7 +124,7 @@ saveRDS(xdata, file = '{df.loc['out_tsv'].value.replace('.tsv', '_XCMSSET.rds')}
 '''
 
 r_fname = os.path.join(out_dir, f"xcms_{hash_tag}.R")
-params_fname = os.path.join(out_dir, f"params_{has_tag}.log")
+params_fname = os.path.join(out_dir, f"params_{hash_tag}.log")
 with open(params_fname, 'w') as f:
 	print(args, file = f)
 with open(r_fname, 'w') as f:
