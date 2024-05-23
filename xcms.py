@@ -1,135 +1,169 @@
-################################################################################
-# Gabe Reder - gkreder@gmail.com
-################################################################################
-# A python wrapper for running XCMS on input data (using XCMS 3 syntax)
-################################################################################
-import sys
-import os
 import pandas as pd
-import numpy as np
 import argparse
+import logging
+from pathlib import Path
 import hashlib
+import rpy2.robjects as ro
+from rpy2.robjects import pandas2ri
+from rpy2.robjects.packages import importr
+from rpy2.robjects.conversion import localconverter
+import yaml
+
+# Enable the conversion between pandas and R data frames
+pandas2ri.activate()
+
+# Import necessary R packages
+base = importr('base')
+utils = importr('utils')
+msnbase = importr('MSnbase')
+xcms = importr('xcms')
+dplyr = importr('dplyr')
+stringr = importr('stringr')
+BiocParallel = importr('BiocParallel')
+stats = importr('stats')
+methods = importr('methods')
+biobase = importr('Biobase')
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
 ################################################################################
-parser = argparse.ArgumentParser()
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Run XCMS on input data")
+    parser.add_argument('--config', required=True, help='YAML configuration file')
+    parser.add_argument('--debug', action='store_true', help='Enable debug mode (keep temporary files)')
+    return parser.parse_args()
 
-# Required file and parameter inputs 
-parser.add_argument('--in_file', required = True)
-parser.add_argument('--debug', action = 'store_true')
-args = parser.parse_args()
 ################################################################################
+def read_config(config_path):
+    with open(config_path, 'r') as file:
+        config = yaml.safe_load(file)
+    config = {k: v for k, v in config.items() if v != None}
+    return config
 
-df = pd.read_excel(args.in_file, index_col = 0, names = ['name', 'value'], header = None)
-out_dir = os.path.dirname(df.loc['out_tsv'].value)
-os.system(f'mkdir -p {out_dir}')
-# Create a random suffix for the temporary R file
-hash_tag = str(int(hashlib.sha256(df.loc['out_tsv'].value.encode('utf-8')).hexdigest(), 16) % 10**12)
+################################################################################
+def create_output_directory(out_dir):
+    Path(out_dir).mkdir(parents=True, exist_ok=True)
 
-out_string = ""
-files = ','.join([f'''"{x}"''' for x in df.loc['in_files'].value.split(',')])
-sample_names = ','.join([f'''"{x}"''' for x in df.loc['sample_names'].value.split(',')])
-if str(df.loc['sample_groups']) != "None":
-    sample_groups = ','.join([f'''"{x}"''' for x in df.loc['sample_groups'].value.split(',')])
-else:
-    sample_groups = "integer(length(sample_names))"
-out_string += f'''library(xcms)
-library(plyr)
-library(dplyr)
-library(stringr)
-options(dplyr.summarise.inform = FALSE)
-BiocParallel::register(BiocParallel::SerialParam())
-files <- c({files})
-sample_names <- c({sample_names})
-sample_groups <- c({sample_groups})
-pd <- data.frame(sample_name = sample_names, sample_group = sample_groups, stringsAsFactors = FALSE)
-raw_data <- readMSData(files = files, pdata = new("NAnnotatedDataFrame", pd), mode = "onDisk")
-cwp <- CentWaveParam(ppm = {float(df.loc['centwave_ppm'].value)}, mzdiff = {float(df.loc['centwave_mzdiff'].value)}, integrate = {int(df.loc['centwave_integrate'].value)}, fitgauss = {str(df.loc['centwave_fitgauss'].value).upper()}, noise = {float(df.loc['centwave_noise'].value)}, peakwidth=c({df.loc['centwave_peakwidth'].value}), prefilter = c({df.loc['centwave_prefilter'].value}), snthresh = {float(df.loc['centwave_snthresh'].value)}, mzCenterFun = "{df.loc['centwave_mzCenterFun'].value}")
-xdata <- findChromPeaks(raw_data, param = cwp)
-owp <- ObiwarpParam(factorGap = {float(df.loc['obiwarp_factorGap'].value)} , binSize = {float(df.loc['obiwarp_binSize'].value)}, factorDiag = {float(df.loc['obiwarp_factorDiag'].value)} , distFun = "{df.loc['obiwarp_distFun'].value}", response = {float(df.loc['obiwarp_response'].value)} , localAlignment = FALSE, initPenalty = {float(df.loc['obiwarp_initPenalty'].value)} )
-pdp <- PeakDensityParam(sampleGroups = xdata$sample_group, minSamples = {df.loc['density_minSamples'].value}, minFraction = {df.loc['density_minFraction'].value}, binSize = {df.loc['density_binSize'].value}, bw = {df.loc['density_bw'].value}, maxFeatures = {df.loc['density_maxFeatures'].value})
-xdata <- adjustRtime(xdata, param=owp)
-xdata <- groupChromPeaks(xdata, param = pdp)
-xdata <- adjustRtime(xdata, param=owp)
-xdata <- groupChromPeaks(xdata, param = pdp)
-xdata <- adjustRtime(xdata, param=owp)
-xdata <- groupChromPeaks(xdata, param = pdp)
-xdata <- fillChromPeaks(xdata)
-fd <- featureDefinitions(xdata)
-fv <- featureValues(xdata, value = 'into')
-# fs <- featureSummary(xdata, group = xdata$sample_group)
-pd <- phenoData(xdata)
-cp <- chromPeaks(xdata)
-sample_names <- pd@data$sample_name
-peakidxs <- fd$peakidx'''
-out_string +='''
-suppressWarnings(feature_mzs <- lapply(peakidxs, function (x) {
-	if (length(x) == 1){
-		cp_x <- cp[x, ]
-		sn <- sample_names[cp_x['sample']]
-		concat_mz <- data.frame(temp_name = cp_x['mz'])
-		names(concat_mz) <- paste('mz', sn, sep = '_')
-	}
-	else {
-		cp_x <- data.frame(cp[x, ])
-		sns <- sample_names[cp_x$sample]
-		cp_x$sample_name <- sns
+################################################################################
+def run_xcms(config):
+    # Extract configuration values
+    in_files = ro.StrVector(config['in_files'].split(','))
+    sample_names = ro.StrVector(config['sample_names'].split(','))
+    sample_groups = ro.StrVector(config['sample_groups'].split(',')) if config['sample_groups'] != "None" else stats.integer(len(sample_names))
 
-		concat_mz <- cp_x %>% dplyr::group_by(sample_name) %>% dplyr::summarise(mz = toString(mz)) # , rt = toString(rt)
-		cn_mz <- lapply(concat_mz$sample_name, function (x) { paste('mz', x, sep = '_') })
-		concat_mz <- data.frame(t(concat_mz[, -1]))
-		colnames(concat_mz) <- cn_mz
-	}
-	concat_mz
-}) %>% plyr::rbind.fill())
-feature_mzs$feature_id <- row.names(fv)
-feature_mzs <- feature_mzs[, c("feature_id", paste("mz_", sample_names, sep = ""))]
+    # Create data frame for sample data
+    sdf = ro.DataFrame({'sample_name': sample_names, 'sample_group': sample_groups})
 
-suppressWarnings(feature_rts <- lapply(peakidxs, function (x) {
-	if (length(x) == 1){
-		cp_x <- cp[x, ]
-		sn <- sample_names[cp_x['sample']]
-		concat_rt <- data.frame(temp_name = cp_x['rt'])
-		names(concat_rt) <- paste('rt', sn, sep = '_')
-	}
-	else {
-		cp_x <- data.frame(cp[x, ])
-		sns <- sample_names[cp_x$sample]
-		cp_x$sample_name <- sns
+    BiocParallel.register(BiocParallel.SerialParam())
 
-		concat_rt <- cp_x %>% dplyr::group_by(sample_name) %>% dplyr::summarise(rt = toString(rt))
-		cn_rt <- lapply(concat_rt$sample_name, function (x) { paste('rt', x, sep = '_') })
-		concat_rt <- data.frame(t(concat_rt[, -1]))
-		colnames(concat_rt) <- cn_rt
-	}
-	concat_rt
-}) %>% plyr::rbind.fill())
-feature_rts$feature_id <- row.names(fv)
-feature_rts <- feature_rts[, c("feature_id", paste("rt_", sample_names, sep = ""))]
+    raw_data = msnbase.readMSData(files=in_files, pdata=methods.new('AnnotatedDataFrame', sdf), mode='onDisk')
+    cwp = xcms.CentWaveParam(
+        ppm=config.get('centwave_ppm', 25),
+        mzdiff=config.get('centwave_mzdiff', 0.01),
+        integrate=config.get('centwave_integrate', 1),
+        fitgauss=config.get('centwave_fitgauss', False),
+        noise=config.get('centwave_noise', 1000),
+        peakwidth=ro.FloatVector([float(x) for x in config['centwave_peakwidth'].split(',')]),
+        prefilter=ro.IntVector([float(x) for x in config['centwave_prefilter'].split(',')]),
+        snthresh=config.get('centwave_snthresh', 10),
+        mzCenterFun=config.get('centwave_mzCenterFun', 'wMean')
+    )
 
-merged_data <- data.frame(merge(fd, fv, by = 'row.names'))
-colnames(merged_data)[1] <- "feature_id"
-merged_data <- merge(merged_data, feature_rts, by = 'feature_id')
-merged_data <- merge(merged_data, feature_mzs, by = 'feature_id')
-merged_data <- merged_data %>% dplyr::mutate(name = paste("M", round(mzmed), 'T', round(rtmed), sep="")) %>% select(name, everything())
+    xdata = xcms.findChromPeaks(raw_data, param=cwp)
 
-merged_data$peakidx <- str_replace_all(merged_data$peakidx, "[\\r\\n]" , "")
+    owp = xcms.ObiwarpParam(
+        factorGap=float(config.get('obiwarp_factorGap', 0.5)),
+        binSize=float(config.get('obiwarp_binSize', 0.1)),
+        factorDiag=float(config.get('obiwarp_factorDiag', 2)),
+        distFun=config.get('obiwarp_distFun', 'cor'),
+        response=float(config.get('obiwarp_response', 1)),
+        localAlignment=False,
+        initPenalty=float(config.get('obiwarp_initPenalty', 0.05))
+    )
+    pheno_data = xdata.slots['phenoData']
+    pheno_data_df = pheno_data.slots['data']
+    sample_groups = pheno_data_df['sample_group']
+    sample_groups_r = ro.StrVector(sample_groups)
+    pdp = xcms.PeakDensityParam(
+        sampleGroups=sample_groups_r,
+        minSamples=config.get('density_minSamples', 1),
+        minFraction=config.get('density_minFraction', 0.5),
+        binSize=config.get('density_binSize', 0.005),
+        bw=config.get('density_bw', 5),
+        maxFeatures=config.get('density_maxFeatures', 50)
+    )
 
-names <- as.character(merged_data$name)
-merged_data$name <- ifelse(duplicated(names) | duplicated(names, fromLast=TRUE), paste(names, ave(names, names, FUN=seq_along), sep='_'), names)'''
+    grouping_steps = config.get('grouping_steps', 3)
+    for gs in range(grouping_steps):
+        xdata = xcms.adjustRtime(xdata, param=owp)
+        xdata = xcms.groupChromPeaks(xdata, param=pdp)
+    xdata = xcms.fillChromPeaks(xdata)
 
-out_string += f'''
-write.table(merged_data, '{df.loc['out_tsv'].value}', sep='\\t', col.names=NA)
-cpData <- chromPeaks(xdata)
-cpData <- write.table(cpData, '{df.loc['out_tsv'].value.replace('.tsv', '_CPDATA.tsv')}', sep='\\t', col.names=NA)
-saveRDS(xdata, file = '{df.loc['out_tsv'].value.replace('.tsv', '_XCMSSET.rds')}')
-'''
+    fd = xcms.featureDefinitions(xdata)
+    fv = xcms.featureValues(xdata, value='into')
 
-r_fname = os.path.join(out_dir, f"xcms_{hash_tag}.R")
-params_fname = os.path.join(out_dir, f"params_{hash_tag}.log")
-with open(params_fname, 'w') as f:
-	print(args, file = f)
-with open(r_fname, 'w') as f:
-    print(out_string, file = f)
-os.system(f"Rscript {r_fname}")
-if not args.debug:
-	os.system(f"rm {r_fname}")
+    sdf = xcms.phenoData(xdata)
+    cp = xcms.chromPeaks(xdata)
+    sample_names = sdf.slots['data']['sample_name']
 
+    list_data = fd.do_slot('listData')
+    df_fd = pd.DataFrame(dict(zip(list_data.names, map(list,list(list_data)))))
+    df_fd['peakidx'] = df_fd['peakidx'].apply(lambda x : np.array(x).astype(int))
+    df_fd.insert(0, "feature_id", fd.slots['rownames'])
+    peakidxs = df_fd['peakidx'].values
+    df_fv = pd.DataFrame(fv, columns = df_pd.sample_name)
+    df_pd = pheno_data.slots['data']
+    df_pd.index = df_pd.index.astype(int)
+    df_cp = pd.DataFrame(cp, columns = ["mz","mzmin","mzmax","rt","rtmin","rtmax","into","intb","maxo","sn","sample"])
+    df_cp['sample'] = df_cp['sample'].astype(int)
+    # fd_test = xdata.slots['featureData']
+    # df_fd_test = fd_test.slots['data'] # this DF contains spectrum information for each spectrum
+    result = []
+    peak_description_rows = []
+    for x in peakidxs:
+        df_cp_x = df_cp.iloc[x - 1].copy()
+        sns = df_pd.loc[df_cp_x['sample'].values]['sample_name'].values
+        df_cp_x['sample_name'] = sns
+        df_cp_x_summary = df_cp_x.groupby('sample_name').mean()[['mz', 'rt']]
+        row = {f"rt_{k}" : v for k,v in df_cp_x_summary['rt'].to_dict().items()}
+        row.update({f"mz_{k}" : v for k,v in df_cp_x_summary['mz'].to_dict().items()})
+        peak_description_rows.append(row)
+    df_peak_description = pd.DataFrame(peak_description_rows)
+    for sn in df_pd['sample_name']:
+        if sn not in df_peak_description.columns:
+            df_peak_description[sn] = None
+    def sort_fun(x):
+        sort_val = list(df_pd['sample_name'].values).index(x.replace('rt_', '').replace('mz_', ''))
+        if 'mz_' in x:
+            sort_val += len(df_pd) + 1
+        return sort_val
+    df_peak_description = df_peak_description[sorted(df_peak_description.columns, key = lambda x : sort_fun(x))]
+    df_merged = pd.concat([df_fd, df_fv, df_peak_description], axis = 1)
+    df_merged.insert(0, "name", df_merged.apply(lambda row: f"M{round(row['mzmed'])}T{round(row['rtmed'])}", axis=1))
+
+    out_tsv = config['out_tsv']
+    if out_tsv.endswith('.tsv'):
+        out_sep = '\t'
+    elif out_tsv.endswith('.csv'):
+        out_sep = ','
+    else:
+        raise ValueError(f"Output file must be either a .tsv or .csv file: {out_tsv}")
+    df_merged.to_csv(out_tsv, sep=out_sep, index=False)
+    df_cp.to_csv(out_tsv.replace('.tsv', '_CPDATA.tsv'), sep='\t', index=False)
+
+    # cp_data = pd.DataFrame(xcms.chromPeaks(xdata))
+    # cp_data.to_csv(out_tsv.replace('.tsv', '_CPDATA.tsv'), sep='\t', index=False)
+
+    ro.r['saveRDS'](xdata, file=out_tsv.replace('.tsv', '_XCMSSET.rds'))
+
+################################################################################
+def main():
+    args = parse_arguments()
+    config = read_config(args.config)
+    out_dir = Path(config['out_tsv']).parent
+    create_output_directory(out_dir)
+    run_xcms(config)
+
+if __name__ == "__main__":
+    main()
