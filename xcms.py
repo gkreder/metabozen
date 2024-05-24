@@ -3,26 +3,8 @@ import argparse
 import logging
 from pathlib import Path
 import hashlib
-import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
-from rpy2.robjects.packages import importr
-from rpy2.robjects.conversion import localconverter
 import yaml
-
-# Enable the conversion between pandas and R data frames
-pandas2ri.activate()
-
-# Import necessary R packages
-base = importr('base')
-utils = importr('utils')
-msnbase = importr('MSnbase')
-xcms = importr('xcms')
-dplyr = importr('dplyr')
-stringr = importr('stringr')
-BiocParallel = importr('BiocParallel')
-stats = importr('stats')
-methods = importr('methods')
-biobase = importr('Biobase')
+import numpy as np
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -30,15 +12,102 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 ################################################################################
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Run XCMS on input data")
-    parser.add_argument('--config', required=True, help='YAML configuration file')
-    parser.add_argument('--debug', action='store_true', help='Enable debug mode (keep temporary files)')
+    parser.add_argument('--parameters', '-p', required=True, help='YAML configuration file with parameters')
+    parser.add_argument('--samples', '-s', required=True, help='tsv/csv/xlsx file containing input sample information')
+    parser.add_argument('--output', '-o', required=True, help='Path to output TSV file (parent directory will be created if nonexistent)')
+    parser.add_argument('--debug', '-d', action='store_true', help='Enable debug mode (keep temporary files)')
     return parser.parse_args()
+
+def load_R_libraries():
+    import rpy2.robjects as ro
+    from rpy2.robjects import pandas2ri
+    from rpy2.robjects.packages import importr
+    from rpy2.robjects.conversion import localconverter
+    # Enable the conversion between pandas and R data frames
+    pandas2ri.activate()
+    # Import necessary R packages
+    base = importr('base')
+    utils = importr('utils')
+    msnbase = importr('MSnbase')
+    xcms = importr('xcms')
+    dplyr = importr('dplyr')
+    stringr = importr('stringr')
+    BiocParallel = importr('BiocParallel')
+    stats = importr('stats')
+    methods = importr('methods')
+    biobase = importr('Biobase')
+
+################################################################################
+def validate_centwave(config):
+    for cwp in ['peakwidth', 'prefilter']:
+        if cwp in config['centwave']:
+            cwp_val = config['centwave'][cwp]
+            assert type(cwp_val) == list and len(cwp_val) == 2 and np.all([type(x) == float for x in cwp_val]), f"centwave.{cwp} must be a list of two float values: {cwp_val}"
+    for cwp in ['ppm', 'mzdiff', 'snthresh', 'noise']:
+        if cwp in config['centwave']:
+            cwp_val = config['centwave'][cwp]
+            assert type(cwp_val) in [float, int], f"centwave.{cwp} must be a float: {cwp_val}"
+            config['centwave'][cwp] = float(cwp_val)
+    if 'integrate' in config['centwave']:
+        cwp = config['centwave']['integrate']
+        assert type(cwp) == int and ( cwp == 0 or cwp == 1), f"centwave.integrate must be an integer with value 0 or 1: {cwp}"
+    if 'fitgauss' in config['centwave']:
+        cwp = config['centwave']['fitgauss']
+        assert type(cwp) == bool, f"centwave.fitgauss must be a boolean: {cwp}"
+    if 'mzCenterFun' in config['centwave']:
+        cwp = config['centwave']['mzCenterFun']
+        allowed_vals = ['wMean', 'mean', 'apex', 'wMeanApex3','meanApex3']
+        assert type(cwp) == str and cwp in allowed_vals, f"centwave.mzCenterFun must be one of {allowed_vals}: {cwp}"
+    return config
+
+################################################################################
+def validate_obiwarp(config):
+    for cwp in ['factorGap', 'binSize', 'factorDiag', 'response', 'initPenalty']:
+        if cwp in config['obiwarp']:
+            cwp_val = config['obiwarp'][cwp]
+            assert type(cwp_val) in [float, int], f"obiwarp.{cwp} must be a float: {cwp_val}"
+            config['obiwarp'][cwp] = float(cwp_val)
+    if 'localAlignment' in config['obiwarp']:
+        cwp = config['obiwarp']['localAlignment']
+        assert type(cwp) == bool, f"obiwarp.localAlignment must be a boolean: {cwp}"
+    if 'distFun' in config['obiwarp']:
+        cwp = config['obiwarp']['distFun']
+        allowed_vals = ['cor', 'cor_opt', 'cov', 'prd', 'euc']
+        assert type(cwp) == str and cwp in allowed_vals, f"obiwarp.distFun must be one of {allowed_vals}: {cwp}"
+    return config
+
+################################################################################
+def validate_density(config):
+    for cwp in ['minSamples', 'maxFeatures']:
+        if cwp in config['density']:
+            cwp_val = config['density'][cwp]
+            assert type(cwp_val) == int, f"density.{cwp} must be an integer: {cwp_val}"
+    for cwp in ['minFraction', 'binSize', 'bw']:
+        if cwp in config['density']:
+            cwp_val = config['density'][cwp]
+            assert type(cwp_val) in [float, int], f"density.{cwp} must be a float: {cwp_val}"
+            config['density'][cwp] = float(cwp_val)
+    return config
+
+################################################################################
+def validate_grouping(config):
+    if 'grouping_steps' in config:
+        cwp = config['grouping_steps']
+        assert type(cwp) == int, f"grouping_steps must be an integer: {cwp}"
+    return config
+
 
 ################################################################################
 def read_config(config_path):
     with open(config_path, 'r') as file:
         config = yaml.safe_load(file)
     config = {k: v for k, v in config.items() if v != None}
+    for param_group in ['centwave', 'obiwarp', 'density', 'grouping_steps']:
+        vf = {'centwave': validate_centwave,
+            'obiwarp': validate_obiwarp,
+            'density': validate_density,
+            'grouping_steps': validate_grouping}.get(param_group, lambda x : x)
+        config = vf(config)
     return config
 
 ################################################################################
@@ -46,40 +115,78 @@ def create_output_directory(out_dir):
     Path(out_dir).mkdir(parents=True, exist_ok=True)
 
 ################################################################################
-def run_xcms(config):
+def read_samples(samples_file):
+    if samples_file.endswith('.tsv'):
+        sep = '\t'
+        tabular = True
+    elif samples_file.endswith('.csv'):
+        sep = ','
+        tabular = True
+    elif samples_file.endswith('.xlsx'):
+        sep = None
+        tabular = False
+    else:
+        raise ValueError(f"Samples file must be either a .tsv, .csv, or .xlsx file: {samples_file}")
+    df_samples = pd.read_csv(samples_file, sep=sep) if tabular else pd.read_excel(samples_file)
+
+    # Check the number of columns
+    num_columns = df_samples.shape[1]
+    if num_columns not in [2, 3]:
+        raise ValueError(f"Samples file must have either 2 or 3 columns, found {num_columns} columns")
+    
+    if num_columns == 3:
+        expected_headers = ['Sample Name', 'Sample Group', 'File']
+    else:
+        expected_headers = ['Sample Name', 'File']
+
+    # Check for headers or assign them if missing
+    if list(df_samples.columns) != expected_headers:
+        if list(df_samples.columns) == list(range(num_columns)):
+            # If there are no headers, assign the expected headers
+            df_samples.columns = expected_headers
+        else:
+            # If headers are present but incorrect, raise an error
+            raise ValueError(f"Column headers must be {expected_headers}, found {list(df_samples.columns)}")
+    
+    return df_samples
+
+################################################################################
+
+################################################################################
+def run_xcms(params, samples, out_file):
     # Extract configuration values
-    in_files = ro.StrVector(config['in_files'].split(','))
-    sample_names = ro.StrVector(config['sample_names'].split(','))
-    sample_groups = ro.StrVector(config['sample_groups'].split(',')) if config['sample_groups'] != "None" else stats.integer(len(sample_names))
+    in_files = ro.StrVector(samples['File'].values)
+    sample_names = ro.StrVector(samples['Sample Name'].values)
+    sample_groups = ro.StrVector(samples['Sample Group'].values) if 'Sample Group' in samples.columns else np.repeat(0, len(sample_names))
 
     # Create data frame for sample data
-    sdf = ro.DataFrame({'sample_name': sample_names, 'sample_group': sample_groups})
+    pheno_data = ro.DataFrame({'sample_name': sample_names, 'sample_group': sample_groups})
 
     BiocParallel.register(BiocParallel.SerialParam())
 
-    raw_data = msnbase.readMSData(files=in_files, pdata=methods.new('AnnotatedDataFrame', sdf), mode='onDisk')
+    raw_data = msnbase.readMSData(files=in_files, pdata=methods.new('AnnotatedDataFrame', pheno_data), mode='onDisk')
     cwp = xcms.CentWaveParam(
-        ppm=config.get('centwave_ppm', 25),
-        mzdiff=config.get('centwave_mzdiff', 0.01),
-        integrate=config.get('centwave_integrate', 1),
-        fitgauss=config.get('centwave_fitgauss', False),
-        noise=config.get('centwave_noise', 1000),
-        peakwidth=ro.FloatVector([float(x) for x in config['centwave_peakwidth'].split(',')]),
-        prefilter=ro.IntVector([float(x) for x in config['centwave_prefilter'].split(',')]),
-        snthresh=config.get('centwave_snthresh', 10),
-        mzCenterFun=config.get('centwave_mzCenterFun', 'wMean')
+        ppm = params.get('centwave', {}).get('ppm', 30.0),
+        mzdiff = params.get('centwave', {}).get('mzdiff', 0.01),
+        integrate = params.get('centwave', {}).get('integrate', 1),
+        fitgauss = params.get('centwave', {}).get('fitgauss', False),
+        noise = params.get('centwave', {}).get('noise', 0.0),
+        peakwidth = ro.FloatVector(params.get('centwave', {}).get('peakwidth', [10.0, 60.0])),
+        prefilter = ro.IntVector(params.get('centwave', {}).get('prefilter', [3.0, 500.0])),
+        snthresh = params.get('centwave', {}).get('snthresh', 10.0),
+        mzCenterFun = params.get('centwave', {}).get('mzCenterFun', 'wMean')
     )
 
     xdata = xcms.findChromPeaks(raw_data, param=cwp)
 
     owp = xcms.ObiwarpParam(
-        factorGap=float(config.get('obiwarp_factorGap', 0.5)),
-        binSize=float(config.get('obiwarp_binSize', 0.1)),
-        factorDiag=float(config.get('obiwarp_factorDiag', 2)),
-        distFun=config.get('obiwarp_distFun', 'cor'),
-        response=float(config.get('obiwarp_response', 1)),
-        localAlignment=False,
-        initPenalty=float(config.get('obiwarp_initPenalty', 0.05))
+        factorGap = params.get('obiwarp', {}).get('factorGap', 1.0),
+        binSize = params.get('obiwarp', {}).get('binSize', 0.5),
+        factorDiag = params.get('obiwarp', {}).get('factorDiag', 2.0),
+        distFun = params.get('obiwarp', {}).get('distFun', 'cor_opt'),
+        response = params.get('obiwarp', {}).get('response', 1.0),
+        localAlignment = params.get('obiwarp', {}).get('localAlignment', False),
+        initPenalty = params.get('obiwarp', {}).get('initPenalty', 0.0)
     )
     pheno_data = xdata.slots['phenoData']
     pheno_data_df = pheno_data.slots['data']
@@ -87,14 +194,14 @@ def run_xcms(config):
     sample_groups_r = ro.StrVector(sample_groups)
     pdp = xcms.PeakDensityParam(
         sampleGroups=sample_groups_r,
-        minSamples=config.get('density_minSamples', 1),
-        minFraction=config.get('density_minFraction', 0.5),
-        binSize=config.get('density_binSize', 0.005),
-        bw=config.get('density_bw', 5),
-        maxFeatures=config.get('density_maxFeatures', 50)
+        minSamples = params.get('density', {}).get('minSamples', 1),
+        minFraction = params.get('density', {}).get('minFraction', 0.25),
+        binSize = params.get('density', {}).get('binSize', 0.025),
+        bw = params.get('density', {}).get('bw', 3.0),
+        maxFeatures = params.get('density', {}).get('maxFeatures', 200)
     )
 
-    grouping_steps = config.get('grouping_steps', 3)
+    grouping_steps = params.get('grouping_steps', 3)
     for gs in range(grouping_steps):
         xdata = xcms.adjustRtime(xdata, param=owp)
         xdata = xcms.groupChromPeaks(xdata, param=pdp)
@@ -103,18 +210,18 @@ def run_xcms(config):
     fd = xcms.featureDefinitions(xdata)
     fv = xcms.featureValues(xdata, value='into')
 
-    sdf = xcms.phenoData(xdata)
+    pheno_data = biobase.phenoData(xdata)
     cp = xcms.chromPeaks(xdata)
-    sample_names = sdf.slots['data']['sample_name']
+    sample_names = pheno_data.slots['data']['sample_name']
 
     list_data = fd.do_slot('listData')
     df_fd = pd.DataFrame(dict(zip(list_data.names, map(list,list(list_data)))))
     df_fd['peakidx'] = df_fd['peakidx'].apply(lambda x : np.array(x).astype(int))
     df_fd.insert(0, "feature_id", fd.slots['rownames'])
     peakidxs = df_fd['peakidx'].values
-    df_fv = pd.DataFrame(fv, columns = df_pd.sample_name)
     df_pd = pheno_data.slots['data']
     df_pd.index = df_pd.index.astype(int)
+    df_fv = pd.DataFrame(fv, columns = df_pd.sample_name)
     df_cp = pd.DataFrame(cp, columns = ["mz","mzmin","mzmax","rt","rtmin","rtmax","into","intb","maxo","sn","sample"])
     df_cp['sample'] = df_cp['sample'].astype(int)
     # fd_test = xdata.slots['featureData']
@@ -151,19 +258,17 @@ def run_xcms(config):
         raise ValueError(f"Output file must be either a .tsv or .csv file: {out_tsv}")
     df_merged.to_csv(out_tsv, sep=out_sep, index=False)
     df_cp.to_csv(out_tsv.replace('.tsv', '_CPDATA.tsv'), sep='\t', index=False)
-
-    # cp_data = pd.DataFrame(xcms.chromPeaks(xdata))
-    # cp_data.to_csv(out_tsv.replace('.tsv', '_CPDATA.tsv'), sep='\t', index=False)
-
     ro.r['saveRDS'](xdata, file=out_tsv.replace('.tsv', '_XCMSSET.rds'))
+
 
 ################################################################################
 def main():
     args = parse_arguments()
-    config = read_config(args.config)
-    out_dir = Path(config['out_tsv']).parent
-    create_output_directory(out_dir)
-    run_xcms(config)
+    load_R_libraries()
+    params = read_config(args.parameters)
+    samples = read_samples(args.samples)
+    create_output_directory(out_dir = Path(args.output).parent)
+    # run_xcms(samples, params, args.output)
 
 if __name__ == "__main__":
     main()
