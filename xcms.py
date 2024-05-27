@@ -2,23 +2,27 @@ import pandas as pd
 import argparse
 import logging
 from pathlib import Path
-import hashlib
 import yaml
 import numpy as np
-
-# Configure logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+from utils import create_output_directory, read_samples
 
 ################################################################################
 def parse_arguments():
     parser = argparse.ArgumentParser(description="Run XCMS on input data")
     parser.add_argument('--parameters', '-p', required=True, help='YAML configuration file with parameters')
     parser.add_argument('--samples', '-s', required=True, help='tsv/csv/xlsx file containing input sample information')
-    parser.add_argument('--output', '-o', required=True, help='Path to output TSV file (parent directory will be created if nonexistent)')
-    parser.add_argument('--debug', '-d', action='store_true', help='Enable debug mode (keep temporary files)')
-    return parser.parse_args()
+    parser.add_argument('--out_file', '-o', required=True, help='Path to output tsv or csv file. Tsv is recommended. Parent directory will be created if nonexistent.')
+    parser.add_argument('--no_logfile', '-n', action='store_true', help='Disable saving log to a file')
+    parser.add_argument('--debug_files', '-d', action='store_true', help='Save the output .rds and and chromPeak files for debugging')
+    args = parser.parse_args()
+    if not (args.out_file.endswith('.tsv') or args.out_file.endswith('.csv')):
+        raise ValueError(f"Output file must be a .tsv or .csv file: {args.out_file}")
+    return args
 
+################################################################################
 def load_R_libraries():
+    # Loading R libraries globally from within function in order to perform argparse validation before loading R
+    global ro, pandas2ri, base, utils, msnbase, xcms, dplyr, stringr, BiocParallel, stats, methods, biobase
     import rpy2.robjects as ro
     from rpy2.robjects import pandas2ri
     from rpy2.robjects.packages import importr
@@ -111,53 +115,10 @@ def read_config(config_path):
     return config
 
 ################################################################################
-def create_output_directory(out_dir):
-    Path(out_dir).mkdir(parents=True, exist_ok=True)
-
-################################################################################
-def read_samples(samples_file):
-    if samples_file.endswith('.tsv'):
-        sep = '\t'
-        tabular = True
-    elif samples_file.endswith('.csv'):
-        sep = ','
-        tabular = True
-    elif samples_file.endswith('.xlsx'):
-        sep = None
-        tabular = False
-    else:
-        raise ValueError(f"Samples file must be either a .tsv, .csv, or .xlsx file: {samples_file}")
-    df_samples = pd.read_csv(samples_file, sep=sep) if tabular else pd.read_excel(samples_file)
-
-    # Check the number of columns
-    num_columns = df_samples.shape[1]
-    if num_columns not in [2, 3]:
-        raise ValueError(f"Samples file must have either 2 or 3 columns, found {num_columns} columns")
-    
-    if num_columns == 3:
-        expected_headers = ['Sample Name', 'Sample Group', 'File']
-    else:
-        expected_headers = ['Sample Name', 'File']
-
-    # Check for headers or assign them if missing
-    if list(df_samples.columns) != expected_headers:
-        if list(df_samples.columns) == list(range(num_columns)):
-            # If there are no headers, assign the expected headers
-            df_samples.columns = expected_headers
-        else:
-            # If headers are present but incorrect, raise an error
-            raise ValueError(f"Column headers must be {expected_headers}, found {list(df_samples.columns)}")
-    
-    return df_samples
-
-################################################################################
-
-################################################################################
-def run_xcms(params, samples, out_file):
-    # Extract configuration values
-    in_files = ro.StrVector(samples['File'].values)
-    sample_names = ro.StrVector(samples['Sample Name'].values)
-    sample_groups = ro.StrVector(samples['Sample Group'].values) if 'Sample Group' in samples.columns else np.repeat(0, len(sample_names))
+def run_xcms(args):
+    in_files = ro.StrVector(args.in_files)
+    sample_names = ro.StrVector(args.sample_names)
+    sample_groups = ro.StrVector(args.sample_groups)
 
     # Create data frame for sample data
     pheno_data = ro.DataFrame({'sample_name': sample_names, 'sample_group': sample_groups})
@@ -166,27 +127,27 @@ def run_xcms(params, samples, out_file):
 
     raw_data = msnbase.readMSData(files=in_files, pdata=methods.new('AnnotatedDataFrame', pheno_data), mode='onDisk')
     cwp = xcms.CentWaveParam(
-        ppm = params.get('centwave', {}).get('ppm', 30.0),
-        mzdiff = params.get('centwave', {}).get('mzdiff', 0.01),
-        integrate = params.get('centwave', {}).get('integrate', 1),
-        fitgauss = params.get('centwave', {}).get('fitgauss', False),
-        noise = params.get('centwave', {}).get('noise', 0.0),
-        peakwidth = ro.FloatVector(params.get('centwave', {}).get('peakwidth', [10.0, 60.0])),
-        prefilter = ro.IntVector(params.get('centwave', {}).get('prefilter', [3.0, 500.0])),
-        snthresh = params.get('centwave', {}).get('snthresh', 10.0),
-        mzCenterFun = params.get('centwave', {}).get('mzCenterFun', 'wMean')
+        ppm = args.params.get('centwave', {}).get('ppm', 30.0),
+        mzdiff = args.params.get('centwave', {}).get('mzdiff', 0.01),
+        integrate = args.params.get('centwave', {}).get('integrate', 1),
+        fitgauss = args.params.get('centwave', {}).get('fitgauss', False),
+        noise = args.params.get('centwave', {}).get('noise', 0.0),
+        peakwidth = ro.FloatVector(args.params.get('centwave', {}).get('peakwidth', [10.0, 60.0])),
+        prefilter = ro.IntVector(args.params.get('centwave', {}).get('prefilter', [3.0, 500.0])),
+        snthresh = args.params.get('centwave', {}).get('snthresh', 10.0),
+        mzCenterFun = args.params.get('centwave', {}).get('mzCenterFun', 'wMean')
     )
 
     xdata = xcms.findChromPeaks(raw_data, param=cwp)
 
     owp = xcms.ObiwarpParam(
-        factorGap = params.get('obiwarp', {}).get('factorGap', 1.0),
-        binSize = params.get('obiwarp', {}).get('binSize', 0.5),
-        factorDiag = params.get('obiwarp', {}).get('factorDiag', 2.0),
-        distFun = params.get('obiwarp', {}).get('distFun', 'cor_opt'),
-        response = params.get('obiwarp', {}).get('response', 1.0),
-        localAlignment = params.get('obiwarp', {}).get('localAlignment', False),
-        initPenalty = params.get('obiwarp', {}).get('initPenalty', 0.0)
+        factorGap = args.params.get('obiwarp', {}).get('factorGap', 1.0),
+        binSize = args.params.get('obiwarp', {}).get('binSize', 0.5),
+        factorDiag = args.params.get('obiwarp', {}).get('factorDiag', 2.0),
+        distFun = args.params.get('obiwarp', {}).get('distFun', 'cor_opt'),
+        response = args.params.get('obiwarp', {}).get('response', 1.0),
+        localAlignment = args.params.get('obiwarp', {}).get('localAlignment', False),
+        initPenalty = args.params.get('obiwarp', {}).get('initPenalty', 0.0)
     )
     pheno_data = xdata.slots['phenoData']
     pheno_data_df = pheno_data.slots['data']
@@ -194,14 +155,14 @@ def run_xcms(params, samples, out_file):
     sample_groups_r = ro.StrVector(sample_groups)
     pdp = xcms.PeakDensityParam(
         sampleGroups=sample_groups_r,
-        minSamples = params.get('density', {}).get('minSamples', 1),
-        minFraction = params.get('density', {}).get('minFraction', 0.25),
-        binSize = params.get('density', {}).get('binSize', 0.025),
-        bw = params.get('density', {}).get('bw', 3.0),
-        maxFeatures = params.get('density', {}).get('maxFeatures', 200)
+        minSamples = args.params.get('density', {}).get('minSamples', 1),
+        minFraction = args.params.get('density', {}).get('minFraction', 0.25),
+        binSize = args.params.get('density', {}).get('binSize', 0.025),
+        bw = args.params.get('density', {}).get('bw', 3.0),
+        maxFeatures = args.params.get('density', {}).get('maxFeatures', 200)
     )
 
-    grouping_steps = params.get('grouping_steps', 3)
+    grouping_steps = args.params.get('grouping_steps', 3)
     for gs in range(grouping_steps):
         xdata = xcms.adjustRtime(xdata, param=owp)
         xdata = xcms.groupChromPeaks(xdata, param=pdp)
@@ -249,26 +210,39 @@ def run_xcms(params, samples, out_file):
     df_merged = pd.concat([df_fd, df_fv, df_peak_description], axis = 1)
     df_merged.insert(0, "name", df_merged.apply(lambda row: f"M{round(row['mzmed'])}T{round(row['rtmed'])}", axis=1))
 
-    out_tsv = config['out_tsv']
-    if out_tsv.endswith('.tsv'):
+    if args.out_file.endswith('.tsv'):
         out_sep = '\t'
-    elif out_tsv.endswith('.csv'):
+    elif args.out_file.endswith('.csv'):
         out_sep = ','
     else:
-        raise ValueError(f"Output file must be either a .tsv or .csv file: {out_tsv}")
-    df_merged.to_csv(out_tsv, sep=out_sep, index=False)
-    df_cp.to_csv(out_tsv.replace('.tsv', '_CPDATA.tsv'), sep='\t', index=False)
-    ro.r['saveRDS'](xdata, file=out_tsv.replace('.tsv', '_XCMSSET.rds'))
+        raise ValueError(f"Output file must be either a .tsv or .csv file: {args.out_file}")
+    df_merged.to_csv(args.out_file, sep=out_sep, index=False)
+    if args.debug_files:
+        df_cp.to_csv(args.out_file.replace('.tsv', '_CPDATA.tsv'), sep='\t', index=False)
+        ro.r['saveRDS'](xdata, file=args.out_file.replace('.tsv', '_XCMSSET.rds'))
 
 
 ################################################################################
 def main():
     args = parse_arguments()
     load_R_libraries()
-    params = read_config(args.parameters)
-    samples = read_samples(args.samples)
-    create_output_directory(out_dir = Path(args.output).parent)
-    # run_xcms(samples, params, args.output)
+    args.params = read_config(args.parameters)
+    df_samples, in_files, sample_names, sample_groups, _ = read_samples(args.samples)
+    args.in_files = in_files
+    args.sample_names = sample_names
+    args.sample_groups = sample_groups
+    args.out_dir = Path(args.out_file).parent
+    create_output_directory(out_dir = args.out_dir)
+    args.log_filename = args.out_dir / f"{Path(args.out_file).stem}.log"
+    logging_handlers = [logging.StreamHandler()]
+    if not args.no_logfile:
+        logging_handlers.append(logging.FileHandler(args.log_filename))
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                        handlers=logging_handlers)
+
+    # Log the parameters and samples
+    logging.info(f"Args: {args}")    
+    run_xcms(args)
 
 if __name__ == "__main__":
     main()
