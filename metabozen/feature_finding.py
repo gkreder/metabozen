@@ -19,7 +19,7 @@ def get_parser():
 ################################################################################
 def parse_arguments(parser):
     args = parser.parse_args()
-    if not (args.out_file.endswith('.tsv') or args.out_file.endswith('.csv')):
+    if not (Path(args.out_file).suffix == '.tsv' or Path(args.out_file) == '.csv'):
         raise ValueError(f"Output file must be a .tsv or .csv file: {args.out_file}")
     return args
 
@@ -214,16 +214,16 @@ def run_xcms(args):
     df_merged = pd.concat([df_fd, df_fv, df_peak_description], axis = 1)
     df_merged.insert(0, "name", df_merged.apply(lambda row: f"M{round(row['mzmed'])}T{round(row['rtmed'])}", axis=1))
 
-    if args.out_file.endswith('.tsv'):
+    if Path(args.out_file).suffix == '.tsv':
         out_sep = '\t'
-    elif args.out_file.endswith('.csv'):
+    elif Path(args.out_file).suffix == '.csv':
         out_sep = ','
     else:
         raise ValueError(f"Output file must be either a .tsv or .csv file: {args.out_file}")
     df_merged.to_csv(args.out_file, sep=out_sep, index=False)
     if args.debug_files:
-        df_cp.to_csv(args.out_file.replace('.tsv', '_CPDATA.tsv'), sep='\t', index=False)
-        ro.r['saveRDS'](xdata, file=args.out_file.replace('.tsv', '_XCMSSET.rds'))
+        df_cp.to_csv(Path(args.out_file).with_suffix('.CPDATA.tsv'), sep='\t', index=False)
+        ro.r['saveRDS'](xdata, file=str(Path(args.out_file).with_suffix('.XCMSSET.rds')))
 
 
 ################################################################################

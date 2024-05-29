@@ -44,12 +44,18 @@ def make_feature_finding_args(args):
     out_args.parameters = args.config['feature_finding']['parameters']
     out_args.samples = args.config['samples']
     out_args.out_file = Path(args.config['out_dir']) / args.config['run_name'] / args.config['feature_finding']['out_file']
-    for opt_param in ['no_logfile', 'debug_files']:
+    for opt_param in ['debug_files']:
         if opt_param in args.config['feature_finding']:
             setattr(out_args, opt_param, args.config['feature_finding'][opt_param])
         else:
             parser = feature_finding.get_parser()
             setattr(out_args, opt_param, parser.get_default(opt_param))
+    if 'no_logfile' in args:
+        if args.no_logfile:
+            parser = feature_finding.get_parser()
+            setattr(out_args, 'no_logfile', parser.get_default('no_logfile'))
+        else:
+            out_args.no_logfile = True
     return out_args
 
 ################################################################################
@@ -59,12 +65,18 @@ def make_clustering_args(args):
     out_args.samples = args.config['samples']
     out_args.out_file = Path(args.config['out_dir']) / args.config['run_name'] / args.config['clustering']['out_file']
     out_args.xcms_in_file = Path(args.config['out_dir']) / args.config['run_name'] / args.config['feature_finding']['out_file']
-    for opt_param in ['no_logfile', 'debug_files']:
+    for opt_param in ['debug_files']:
         if opt_param in args.config['clustering']:
             setattr(out_args, opt_param, args.config['clustering'][opt_param])    
         else:
             parser = clustering.get_parser()
             setattr(out_args, opt_param, parser.get_default(opt_param))
+    if 'no_logfile' in args:
+        if args.no_logfile:
+            parser = clustering.get_parser()
+            setattr(out_args, 'no_logfile', parser.get_default('no_logfile'))
+        else:
+            out_args.no_logfile = True
     return out_args
 
 ################################################################################
@@ -74,12 +86,18 @@ def make_stats_tests_args(args):
     out_args.samples = args.config['samples']
     out_args.out_file = Path(args.config['out_dir']) / args.config['run_name'] / args.config['stats_tests']['out_file']
     out_args.clustering_in_file = Path(args.config['out_dir']) / args.config['run_name'] / args.config['clustering']['out_file']
-    for opt_param in ['no_logfile', 'no_plots', 'plot_format']:
+    for opt_param in ['no_plots', 'plot_format']:
         if opt_param in args.config['stats_tests']:
             setattr(out_args, opt_param, args.config['stats_tests'][opt_param])    
         else:
             parser = stats_tests.get_parser()
             setattr(out_args, opt_param, parser.get_default(opt_param))
+    if 'no_logfile' in args:
+        if args.no_logfile:
+            parser = stats_tests.get_parser()
+            setattr(out_args, 'no_logfile', parser.get_default('no_logfile'))
+        else:
+            out_args.no_logfile = True
     return out_args
 
 ################################################################################

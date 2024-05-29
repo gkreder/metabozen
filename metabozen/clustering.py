@@ -26,7 +26,7 @@ def get_parser():
 ################################################################################
 def parse_arguments(parser):
     args = parser.parse_args()
-    if not (args.out_file.endswith('.tsv') or args.out_file.endswith('.csv')):
+    if not (Path(args.out_file).suffix == '.tsv' or Path(args.out_file).suffix == '.csv'):
         raise ValueError(f"Output file must be a .tsv or .csv file: {args.out_file}")
     return args
 
@@ -353,9 +353,9 @@ def main(args):
         logging.warning("No normalization values provided, skipping normalization")
         args.df_normalized = args.df_joined.copy()
     args.df_pretty = prettify_output(args)
-    if args.out_file.endswith('.tsv'):
+    if Path(args.out_file).suffix == '.tsv':
         out_sep = '\t'
-    elif args.out_file.endswith('.csv'):
+    elif Path(args.out_file).suffix == '.csv':
         out_sep = ','
     else:
         raise ValueError(f"Output file must be either a .tsv or .csv file: {args.out_file}")

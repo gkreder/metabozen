@@ -23,9 +23,9 @@ def get_parser():
 ################################################################################
 def parse_arguments(parser):
     args = parser.parse_args()
-    if not (args.out_file.endswith('.tsv') or args.out_file.endswith('.csv')):
+    if not (Path(args.out_file).suffix == '.tsv' or Path(args.out_file).suffix == '.csv'):
         raise ValueError(f"Output file must be a .tsv or .csv file: {args.out_file}")
-    if not (args.clustering_in_file.endswith('.tsv') or args.clustering_in_file.endswith('.csv')):
+    if not (Path(args.clustering_in_file).suffix == '.tsv' or Path(args.clustering_in_file).suffix == '.csv'):
         raise ValueError(f"Clustering input file must be a .tsv or .csv file: {args.clustering_in_file}")
     return args
 
@@ -77,9 +77,9 @@ def load_R_libraries():
 
 ################################################################################
 def read_clustering_file(args):
-    if args.clustering_in_file.endswith('.tsv'):
+    if Path(args.clustering_in_file).suffix == '.tsv':
         in_sep = '\t'
-    elif args.clustering_in_file.endswith('.csv'):
+    elif Path(args.clustering_in_file).suffix == '.csv':
         in_sep = ','
     else:
         raise ValueError(f"Clustering input file must be either a .tsv or .csv file: {args.clustering_in_file}")
@@ -183,9 +183,9 @@ def main(args):
                         handlers=logging_handlers)
     logging.info(f"Args: {args}")
     args.df_statistics = run_statistics(args)
-    if args.out_file.endswith('.tsv'):
+    if Path(args.out_file).suffix == '.tsv':
         out_sep = '\t'
-    elif args.out_file.endswith('.csv'):
+    elif Path(args.out_file).suffix == '.csv':
         out_sep = ','
     args.df_statistics.to_csv(args.out_file, sep=out_sep, index=False)
 
