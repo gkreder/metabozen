@@ -1,6 +1,7 @@
 import argparse
 import yaml
 import logging
+import traceback
 import scipy.stats
 from tqdm.auto import tqdm
 import numpy as np
@@ -167,27 +168,31 @@ def run_statistics(args):
 
 ################################################################################
 def main(args):
-    args.config = read_config(args.parameters)
-    args.df_clusters = read_clustering_file(args)
-    df_samples, _, sample_names, sample_groups, _ = read_samples(args.samples)
-    args.df_samples = df_samples
-    args.sample_names = sample_names
-    args.sample_groups = sample_groups
-    args.out_dir = Path(args.out_file).parent
-    create_output_directory(args.out_dir)
-    args.log_filename = args.out_dir / f"{Path(args.out_file).stem}.log"
-    logging_handlers = [logging.StreamHandler()]
-    if not args.no_logfile:
-        logging_handlers.append(logging.FileHandler(args.log_filename))
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
-                        handlers=logging_handlers)
-    logging.info(f"Args: {args}")
-    args.df_statistics = run_statistics(args)
-    if Path(args.out_file).suffix == '.tsv':
-        out_sep = '\t'
-    elif Path(args.out_file).suffix == '.csv':
-        out_sep = ','
-    args.df_statistics.to_csv(args.out_file, sep=out_sep, index=False)
+    try:
+        args.config = read_config(args.parameters)
+        args.df_clusters = read_clustering_file(args)
+        df_samples, _, sample_names, sample_groups, _ = read_samples(args.samples)
+        args.df_samples = df_samples
+        args.sample_names = sample_names
+        args.sample_groups = sample_groups
+        args.out_dir = Path(args.out_file).parent
+        create_output_directory(args.out_dir)
+        args.log_filename = args.out_dir / f"{Path(args.out_file).stem}.log"
+        logging_handlers = [logging.StreamHandler()]
+        if not args.no_logfile:
+            logging_handlers.append(logging.FileHandler(args.log_filename))
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                            handlers=logging_handlers)
+        logging.info(f"Args: {args}")
+        args.df_statistics = run_statistics(args)
+        if Path(args.out_file).suffix == '.tsv':
+            out_sep = '\t'
+        elif Path(args.out_file).suffix == '.csv':
+            out_sep = ','
+        args.df_statistics.to_csv(args.out_file, sep=out_sep, index=False)
+    except Exception as e:
+        logging.error("An error occurred", exc_info=True)
+        traceback.print_exc()  # This will print the traceback to the console
 
 if __name__ == "__main__":
     parser = get_parser()

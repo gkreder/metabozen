@@ -1,5 +1,6 @@
 from pathlib import Path
 import logging
+import traceback
 import yaml
 import scipy.spatial
 import scipy.cluster
@@ -315,51 +316,55 @@ def prettify_output(args):
 
 ################################################################################
 def main(args):
-    args.params = read_config(args.parameters)
-    df_samples, in_files, sample_names, sample_groups, normalization = read_samples(args.samples)
-    args.in_files = in_files
-    args.sample_names = sample_names
-    args.sample_groups = sample_groups
-    args.normalization = normalization
-    args.out_dir = Path(args.out_file).parent
-    create_output_directory(out_dir = args.out_dir)
-    args.log_filename = args.out_dir / f"{Path(args.out_file).stem}.log"
-    logging_handlers = [logging.StreamHandler()]
-    if not args.no_logfile:
-        logging_handlers.append(logging.FileHandler(args.log_filename))
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
-                        handlers=logging_handlers)
-    logging.info(f"Args: {args}")
-    if args.debug_files:
-        args.intermediate_files_dir = args.out_dir / f"{Path(args.out_file).stem}_clustering_files"
-        args.intermediate_files_dir.mkdir(exist_ok=True)
-    df, df_sorted_intensities, df_sorted_rts =  read_xcms_input(args)
-    args.df = df
-    args.df_sorted_intensities = df_sorted_intensities
-    args.df_sorted_rts = df_sorted_rts
-    args.max_distance = 2.0 + args.params["alpha"]
-    args.linkage = calculate_linkage(args)
-    args.df_cuts = find_clusters(args)
-    args.df_merged = merge_clusters(args)
-    args.df_final_clusters = finalize_clusters(args)
-    if args.params["recursive_clustering"]:
-        args.df_final_clusters = recursive_clustering(args)
-    else:
-        logging.warning("Recursive clustering disabled, skipping")
-    args.df_joined = join_clustered_output(args)
-    if type(args.normalization) != type(None):
-        args.df_normalized = normalize_intensities(args)
-    else:
-        logging.warning("No normalization values provided, skipping normalization")
-        args.df_normalized = args.df_joined.copy()
-    args.df_pretty = prettify_output(args)
-    if Path(args.out_file).suffix == '.tsv':
-        out_sep = '\t'
-    elif Path(args.out_file).suffix == '.csv':
-        out_sep = ','
-    else:
-        raise ValueError(f"Output file must be either a .tsv or .csv file: {args.out_file}")
-    args.df_pretty.to_csv(args.out_file, sep=out_sep)
+    try:
+        args.params = read_config(args.parameters)
+        df_samples, in_files, sample_names, sample_groups, normalization = read_samples(args.samples)
+        args.in_files = in_files
+        args.sample_names = sample_names
+        args.sample_groups = sample_groups
+        args.normalization = normalization
+        args.out_dir = Path(args.out_file).parent
+        create_output_directory(out_dir = args.out_dir)
+        args.log_filename = args.out_dir / f"{Path(args.out_file).stem}.log"
+        logging_handlers = [logging.StreamHandler()]
+        if not args.no_logfile:
+            logging_handlers.append(logging.FileHandler(args.log_filename))
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                            handlers=logging_handlers)
+        logging.info(f"Args: {args}")
+        if args.debug_files:
+            args.intermediate_files_dir = args.out_dir / f"{Path(args.out_file).stem}_clustering_files"
+            args.intermediate_files_dir.mkdir(exist_ok=True)
+        df, df_sorted_intensities, df_sorted_rts =  read_xcms_input(args)
+        args.df = df
+        args.df_sorted_intensities = df_sorted_intensities
+        args.df_sorted_rts = df_sorted_rts
+        args.max_distance = 2.0 + args.params["alpha"]
+        args.linkage = calculate_linkage(args)
+        args.df_cuts = find_clusters(args)
+        args.df_merged = merge_clusters(args)
+        args.df_final_clusters = finalize_clusters(args)
+        if args.params["recursive_clustering"]:
+            args.df_final_clusters = recursive_clustering(args)
+        else:
+            logging.warning("Recursive clustering disabled, skipping")
+        args.df_joined = join_clustered_output(args)
+        if type(args.normalization) != type(None):
+            args.df_normalized = normalize_intensities(args)
+        else:
+            logging.warning("No normalization values provided, skipping normalization")
+            args.df_normalized = args.df_joined.copy()
+        args.df_pretty = prettify_output(args)
+        if Path(args.out_file).suffix == '.tsv':
+            out_sep = '\t'
+        elif Path(args.out_file).suffix == '.csv':
+            out_sep = ','
+        else:
+            raise ValueError(f"Output file must be either a .tsv or .csv file: {args.out_file}")
+        args.df_pretty.to_csv(args.out_file, sep=out_sep)
+    except Exception as e:
+        logging.error("An error occurred", exc_info=True)
+        traceback.print_exc()  # This will print the traceback to the console
 
 if __name__ == "__main__":
     parser = get_parser()

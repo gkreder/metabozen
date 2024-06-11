@@ -1,5 +1,6 @@
 import argparse
 import logging
+import traceback
 from pathlib import Path
 import yaml
 from utils import create_output_directory
@@ -102,31 +103,36 @@ def make_stats_tests_args(args):
 
 ################################################################################
 def main():
-    args = parse_arguments()
-    args.config = read_config(args.parameters)
-    create_output_directory(Path(args.config['out_dir']) / args.config['run_name'])
-    args.log_filename = Path(args.config['out_dir']) / f"{args.config['run_name']}.log"
-    logging_handlers = [logging.StreamHandler()]
-    logging_handlers.append(logging.FileHandler(args.log_filename))
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
-                        handlers=logging_handlers)
-    # Log the parameters and samples
-    logging.info(f"Args: {args}")
-    feature_finding_args = make_feature_finding_args(args)
-    logging.info(f"Feature Finding Args: {feature_finding_args}")
-    clustering_args = make_clustering_args(args)
-    logging.info(f"Clustering Args: {clustering_args}")
-    if 'stats_tests' in args.config:
-        stats_tests_args = make_stats_tests_args(args)
-        logging.info(f"Stats Tests Args: {stats_tests_args}")
-    logging.info("Starting feature finding")
-    feature_finding.main(feature_finding_args)
-    logging.info("Starting clustering")
-    clustering.main(clustering_args)
-    if 'stats_tests' in args.config:
-        logging.info("Starting stats tests")
-        stats_tests.main(stats_tests_args)
-    logging.info("Pipeline complete")
+    try:
+        args = parse_arguments()
+        args.config = read_config(args.parameters)
+        create_output_directory(Path(args.config['out_dir']) / args.config['run_name'])
+        args.log_filename = Path(args.config['out_dir']) / f"{args.config['run_name']}.log"
+        logging_handlers = [logging.StreamHandler()]
+        logging_handlers.append(logging.FileHandler(args.log_filename))
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                            handlers=logging_handlers)
+        # Log the parameters and samples
+        logging.info(f"Args: {args}")
+        feature_finding_args = make_feature_finding_args(args)
+        logging.info(f"Feature Finding Args: {feature_finding_args}")
+        clustering_args = make_clustering_args(args)
+        logging.info(f"Clustering Args: {clustering_args}")
+        if 'stats_tests' in args.config:
+            stats_tests_args = make_stats_tests_args(args)
+            logging.info(f"Stats Tests Args: {stats_tests_args}")
+        logging.info("Starting feature finding")
+        feature_finding.main(feature_finding_args)
+        logging.info("Starting clustering")
+        clustering.main(clustering_args)
+        if 'stats_tests' in args.config:
+            logging.info("Starting stats tests")
+            stats_tests.main(stats_tests_args)
+        logging.info("Pipeline complete")
+    
+    except Exception as e:
+        logging.error("An error occurred", exc_info=True)
+        traceback.print_exc()  # This will print the traceback to the console
 
 if __name__ == "__main__":
     main()

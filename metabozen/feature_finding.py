@@ -1,6 +1,7 @@
 import pandas as pd
 import argparse
 import logging
+import traceback
 from pathlib import Path
 import yaml
 import numpy as np
@@ -228,24 +229,28 @@ def run_xcms(args):
 
 ################################################################################
 def main(args):
-    load_R_libraries()
-    args.params = read_config(args.parameters)
-    df_samples, in_files, sample_names, sample_groups, _ = read_samples(args.samples)
-    args.in_files = in_files
-    args.sample_names = sample_names
-    args.sample_groups = sample_groups
-    args.out_dir = Path(args.out_file).parent
-    create_output_directory(out_dir = args.out_dir)
-    args.log_filename = args.out_dir / f"{Path(args.out_file).stem}.log"
-    logging_handlers = [logging.StreamHandler()]
-    if not args.no_logfile:
-        logging_handlers.append(logging.FileHandler(args.log_filename))
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
-                        handlers=logging_handlers)
+    try:
+        load_R_libraries()
+        args.params = read_config(args.parameters)
+        df_samples, in_files, sample_names, sample_groups, _ = read_samples(args.samples)
+        args.in_files = in_files
+        args.sample_names = sample_names
+        args.sample_groups = sample_groups
+        args.out_dir = Path(args.out_file).parent
+        create_output_directory(out_dir = args.out_dir)
+        args.log_filename = args.out_dir / f"{Path(args.out_file).stem}.log"
+        logging_handlers = [logging.StreamHandler()]
+        if not args.no_logfile:
+            logging_handlers.append(logging.FileHandler(args.log_filename))
+        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s',
+                            handlers=logging_handlers)
 
-    # Log the parameters and samples
-    logging.info(f"Args: {args}")    
-    run_xcms(args)
+        # Log the parameters and samples
+        logging.info(f"Args: {args}")    
+        run_xcms(args)
+    except Exception as e:
+        logging.error("An error occurred", exc_info=True)
+        traceback.print_exc()  # This will print the traceback to the console
 
 if __name__ == "__main__":
     parser = get_parser()
