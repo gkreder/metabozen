@@ -5,6 +5,7 @@ import traceback
 from pathlib import Path
 import yaml
 import numpy as np
+import ipdb
 from utils import create_output_directory, read_samples
 
 ################################################################################
@@ -15,6 +16,7 @@ def get_parser():
     parser.add_argument('--out_file', '-o', required=True, help='Path to output tsv or csv file. Tsv is recommended. Parent directory will be created if nonexistent.')
     parser.add_argument('--no_logfile', '-n', action='store_true', help='Disable saving log to a file')
     parser.add_argument('--debug_files', '-d', action='store_true', help='Save the output .rds and and chromPeak files for debugging')
+    parser.add_argument('--ipdb_debug', action='store_true', help='Enable debugging with ipdb')
     return parser
 
 ################################################################################
@@ -214,6 +216,16 @@ def run_xcms(args):
     df_peak_description = df_peak_description[sorted(df_peak_description.columns, key = lambda x : sort_fun(x))]
     df_merged = pd.concat([df_fd, df_fv, df_peak_description], axis = 1)
     df_merged.insert(0, "name", df_merged.apply(lambda row: f"M{round(row['mzmed'])}T{round(row['rtmed'])}", axis=1))
+    name_counts = dict(zip(*np.unique(df_merged['name'], return_counts=True)))
+    suf_counts = {k : 1 for k,v in name_counts.items() if v > 1}
+    non_redun_names = []
+    for i_name, name in enumerate(df_merged['name']):
+        if name in suf_counts:
+            non_redun_names.append(f"{name}_{suf_counts[name]}")
+            suf_counts[name] += 1
+        else:
+            non_redun_names.append(name)
+    df_merged['name'] = non_redun_names
 
     if Path(args.out_file).suffix == '.tsv':
         out_sep = '\t'
@@ -251,6 +263,8 @@ def main(args):
     except Exception as e:
         logging.error("An error occurred", exc_info=True)
         traceback.print_exc()  # This will print the traceback to the console
+        if args.ipdb_debug:
+            ipdb.post_mortem()
 
 if __name__ == "__main__":
     parser = get_parser()

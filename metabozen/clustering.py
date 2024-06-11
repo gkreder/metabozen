@@ -12,6 +12,7 @@ import sklearn.metrics
 import numpy as np
 import ast
 import warnings
+import ipdb
 from utils import create_output_directory, read_samples
 
 ################################################################################
@@ -23,6 +24,7 @@ def get_parser():
     parser.add_argument('--out_file', '-o', required=True, help='Path to output tsv or csv file. Tsv is recommended. Parent directory will be created if nonexistent.')
     parser.add_argument('--no_logfile', '-n', action='store_true', help='Disable saving log to a file')
     parser.add_argument('--debug_files', action='store_true', help='Save intermediate files (including intermediate recursive clustering output) for debugging')
+    parser.add_argument('--ipdb_debug', action='store_true', help='Enable debugging with ipdb')
     return parser
 ################################################################################
 def parse_arguments(parser):
@@ -365,6 +367,8 @@ def main(args):
     except Exception as e:
         logging.error("An error occurred", exc_info=True)
         traceback.print_exc()  # This will print the traceback to the console
+        if args.ipdb_debug:
+            ipdb.post_mortem()
 
 if __name__ == "__main__":
     parser = get_parser()

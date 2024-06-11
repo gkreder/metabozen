@@ -4,6 +4,7 @@ import logging
 import traceback
 import scipy.stats
 from tqdm.auto import tqdm
+import ipdb
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -20,6 +21,7 @@ def get_parser():
     parser.add_argument('--no_logfile', '-n', action='store_true', help='Disable saving log to a file')
     parser.add_argument('--no_plots', '-np', action='store_true', help='Disable saving plots')
     parser.add_argument('--plot_format', default="png", help="Format for saving plots (png, svg, etc.)", choices=['png', 'svg', 'jpg', 'jpeg'])
+    parser.add_argument('--ipdb_debug', action='store_true', help='Enable debugging with ipdb')
     return parser
 ################################################################################
 def parse_arguments(parser):
@@ -193,6 +195,8 @@ def main(args):
     except Exception as e:
         logging.error("An error occurred", exc_info=True)
         traceback.print_exc()  # This will print the traceback to the console
+        if args.ipdb_debug:
+            ipdb.post_mortem()
 
 if __name__ == "__main__":
     parser = get_parser()
