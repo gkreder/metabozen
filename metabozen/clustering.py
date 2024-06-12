@@ -311,9 +311,9 @@ def prettify_output(args):
         df_out.insert(insert_index, f'{sg}_mean', df_out[sg_samples].fillna(0.0).mean(axis=1))
     rt_cols = ['rt_' + x for x in args.sample_names]
     mz_cols = ['mz_' + x for x in args.sample_names]
-    df_out_temp = pd.DataFrame(df_out[[x for x in df_out.columns if x not in (args.sample_names + rt_cols)]])
-    df_out = pd.concat([df_out_temp, pd.DataFrame(df_out[list(args.sample_names) + rt_cols])], axis=1, sort=False)
-    df_out = pd.concat([df_out[[x for x in df_out.columns if x not in mz_cols]], df_out[mz_cols]], axis=1)    
+    df_out_temp = pd.DataFrame(df_out[[x for x in df_out.columns if x not in (list(args.sample_names) + rt_cols + mz_cols)]])
+    df_out = pd.concat([df_out_temp, pd.DataFrame(df_out[list(args.sample_names) + rt_cols + mz_cols])], axis=1, sort=False)
+    # df_out = pd.concat([df_out[[x for x in df_out.columns if x not in mz_cols]], df_out[mz_cols]], axis=1)    
     return df_out
 
 ################################################################################

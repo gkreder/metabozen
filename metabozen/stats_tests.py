@@ -113,9 +113,14 @@ def run_mann_whitney_u(args):
         if (df_out.iloc[i][sns_g1].isnull().all() & df_out.iloc[i][sns_g2].isnull().all()): 
             stat, pval = scipy.stats.mannwhitneyu([1e-11, 0, 0], [1e-11, 0], alternative = 'two-sided')
         elif not args.config['mann_whitney_u']['kwargs']['paired']:
-            stat, pval = scipy.stats.mannwhitneyu(df_out.iloc[i][sns_g1].fillna(value = 0.0), df_out.iloc[i][sns_g2].fillna(value = 0.0), alternative = 'two-sided')
+            stat, pval = scipy.stats.mannwhitneyu(
+                df_out.iloc[i][sns_g1].astype(float).fillna(value = 0.0), 
+                df_out.iloc[i][sns_g2].astype(float).fillna(value = 0.0), 
+                alternative = 'two-sided')
         else:
-            stat, pval = scipy.stats.wilcoxon(df_out.iloc[i][sns_g1].fillna(value = 0.0), df_out.iloc[i][sns_g2].fillna(value = 0.0), mode = 'exact')
+            stat, pval = scipy.stats.wilcoxon(df_out.iloc[i][sns_g1].astype(float).fillna(value = 0.0),
+                                              df_out.iloc[i][sns_g2].astype(float).fillna(value = 0.0),
+                                              mode = 'exact')
         stats[i] = stat
         pvals[i] = pval
     out_cols = ['mann_whitney_u_muStats', 'mann_whitney_u_muPvals']
@@ -126,7 +131,7 @@ def run_mann_whitney_u(args):
     if args.config['mann_whitney_u']['kwargs']['qvalues']:
         out_cols.append('mann_whitney_u_muQvals')
         # plot_cols['mann_whitney_u_muQvals'] = "Q-values Mann-Whitney parent features"
-        df_parents = df_out[df_out.apply(lambda x: x.name == x['parent_peak'], axis=1)]
+        df_parents = df_out[df_out.apply(lambda x: x['name'] == x['parent_peak'], axis=1)]
         try:
             qresult = qvalue.qvalue(p = ro.FloatVector(df_parents['mann_whitney_u_muPvals'].values))
             df_qresults = pd.DataFrame(np.array(qresult.rx('qvalues')[0]), index = df_parents.index)
