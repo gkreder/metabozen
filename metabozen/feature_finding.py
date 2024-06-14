@@ -200,6 +200,7 @@ def run_xcms(args):
         df_cp_x = df_cp.iloc[x - 1].copy()
         sns = df_pd.loc[df_cp_x['sample'].values]['sample_name'].values
         df_cp_x['sample_name'] = sns
+        # Remember that here we changed the reported mz_ and rt_ to be the mean across a sample instead of individually reporting each intra-sample chromatographic peak
         df_cp_x_summary = df_cp_x.groupby('sample_name').mean()[['mz', 'rt']]
         row = {f"rt_{k}" : v for k,v in df_cp_x_summary['rt'].to_dict().items()}
         row.update({f"mz_{k}" : v for k,v in df_cp_x_summary['mz'].to_dict().items()})
