@@ -4,9 +4,8 @@
 import sys
 import os
 import pandas as pd
-import numpy as np
 from tqdm.auto import tqdm
-from pyteomics import mzml, mgf
+from pyteomics import mzml
 import argparse
 ################################################################################
 

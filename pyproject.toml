@@ -1,0 +1,48 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "metabozen"
+version = "0.1.0"
+description = "Untargeted LC-MS metabolomics data analysis"
+readme = "README.md"
+authors = [
+    { name = "Gabriel Reder", email = "gk@reder.io" }
+]
+license = { file = "LICENSE" }
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy",
+    "pandas",
+    "scipy",
+    "scikit-learn",
+    "matplotlib",
+    "rpy2",
+    "pyteomics",
+    "tqdm",
+    "pyyaml",
+    "ipdb",
+    "xlrd",
+    "lxml"
+]
+requires-python = ">=3.8"
+
+[project.urls]
+Homepage = "https://github.com/gkreder/metabozen"
+Issues = "https://github.com/gkreder/metabozen/issues"
+
+[project.scripts]
+metabozen = "metabozen.main:main"
+metabozen-feature-finding = "metabozen.feature_finding:main"
+metabozen-clustering = "metabozen.clustering:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/metabozen"]

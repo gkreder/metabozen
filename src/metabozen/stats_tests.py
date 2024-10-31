@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
-from utils import read_samples, create_output_directory
+from .utils import read_samples, create_output_directory
 
 ################################################################################
 def get_parser():

@@ -13,7 +13,7 @@ import numpy as np
 import ast
 import warnings
 import ipdb
-from utils import create_output_directory, read_samples
+from .utils import create_output_directory, read_samples
 
 ################################################################################
 def get_parser():

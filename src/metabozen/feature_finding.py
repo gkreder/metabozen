@@ -6,7 +6,7 @@ from pathlib import Path
 import yaml
 import numpy as np
 import ipdb
-from utils import create_output_directory, read_samples
+from .utils import create_output_directory, read_samples
 
 ################################################################################
 def get_parser():

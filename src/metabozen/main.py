@@ -3,8 +3,8 @@ import logging
 import traceback
 from pathlib import Path
 import yaml
-from utils import create_output_directory
-import feature_finding, clustering, stats_tests
+from .utils import create_output_directory
+from . import feature_finding, clustering, stats_tests
 
 ################################################################################
 def parse_arguments():
