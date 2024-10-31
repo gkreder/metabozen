@@ -1,9 +1,6 @@
-{% set name = "metabozen" %}
-{% set version = "0.1.0" %}
-
 package:
-  name: {{ name|lower }}
-  version: {{ version }}
+  name: metabozen
+  version: 0.1.0
 
 source:
   path: ..
