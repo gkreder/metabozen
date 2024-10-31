@@ -57,7 +57,3 @@ extra:
   recipe-maintainers:
     - gkreder
 
-channels:
-  - conda-forge
-  - bioconda
-  - defaults
