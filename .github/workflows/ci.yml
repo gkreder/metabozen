@@ -19,6 +19,6 @@
           - uses: conda-incubator/setup-miniconda@v2
             with:
               python-version: 3.12
-          - uses: cascode-labs/build-conda-action/action.yml@0.1
+          - uses: cascode-labs/build-conda-action/action.yml@0.1.4
             with: 
               recipe_path: conda/meta.yaml
