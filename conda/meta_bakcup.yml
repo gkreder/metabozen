@@ -38,6 +38,8 @@ requirements:
     - xlrd==2.0.1
     - lxml==5.2.2
     - r-base==4.3.3
+    - bioconductor-xcms==4.0.0
+    - bioconductor-qvalue==2.34.0
     - r-tidyverse==2.0.0
 
 test:
