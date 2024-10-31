@@ -13,12 +13,18 @@
         runs-on: ${{ matrix.os }}
         strategy:
           matrix:
-            os: ["ubuntu-latest", "windows-latest"]
+            include:
+              - os: ubuntu-latest
+                target-platform: linux-64
+              - os: ubuntu-latest
+                target-platform: linux-aarch64
+              - os: windows-latest
+                target-platform: win-64
         steps:
           - uses: actions/checkout@v4
-          - uses: conda-incubator/setup-miniconda@v2
+          - name: Build conda package
+            uses: prefix-dev/rattler-build-action@v0.2.18
             with:
-              python-version: 3.12
-          - uses: cascode-labs/build-conda-action/action.yml@0.1.4
-            with: 
-              recipe_path: conda/meta.yaml
+              artifact-name: package-${{ matrix.target-platform }}
+              build-args: --target-platform ${{ matrix.target-platform }}${{ matrix.target-platform == 'linux-aarch64' && ' --no-test' || '' }}
+          
