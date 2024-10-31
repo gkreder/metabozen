@@ -1,0 +1,66 @@
+{% set name = "metabozen" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  path: ..
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - metabozen = metabozen.main:main
+    - metabozen-feature-finding = metabozen.feature_finding:main
+    - metabozen-clustering = metabozen.clustering:main
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+    - hatchling
+  run:
+    - python >=3.8
+    - numpy==1.26.4
+    - pandas==2.2.1
+    - scipy==1.13.0
+    - scikit-learn==1.4.2
+    - matplotlib==3.9.2
+    - rpy2==3.5.11
+    - pyteomics==4.7.2
+    - tqdm==4.66.2
+    - pyyaml==6.0.1
+    - ipdb==0.13.13
+    - xlrd==2.0.1
+    - lxml==5.2.2
+    - r-base==4.3.3
+    - bioconductor-xcms==4.0.0
+    - bioconductor-qvalue==2.34.0
+    - r-tidyverse==2.0.0
+
+test:
+  imports:
+    - metabozen
+  commands:
+    - metabozen --help
+
+about:
+  home: https://github.com/gkreder/metabozen
+  license: MIT
+  license_file: LICENSE
+  summary: Untargeted LC-MS metabolomics data analysis
+  description: |
+    A Python package for metabolomics data analysis that integrates 
+    with R/Bioconductor tools like XCMS.
+
+extra:
+  recipe-maintainers:
+    - gkreder
+
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
