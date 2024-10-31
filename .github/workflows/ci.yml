@@ -47,7 +47,7 @@
 
           - name: Test Installation Locally
             run: |
-              conda install --use-local metabozen
+              conda install --use-local $(conda build conda/ --output)            
 
           - name: Test Package Import
             run: |
