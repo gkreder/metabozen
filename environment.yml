@@ -1,0 +1,25 @@
+name: metabozen-env
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.8
+  - pip
+  - hatchling
+  - numpy==1.26.4
+  - pandas==2.2.1
+  - scipy==1.13.0
+  - scikit-learn==1.4.2
+  - matplotlib==3.9.2
+  - rpy2==3.5.11
+  - pyteomics==4.7.2
+  - tqdm==4.66.2
+  - pyyaml==6.0.1
+  - ipdb==0.13.13
+  - xlrd==2.0.1
+  - lxml==5.2.2
+  - r-base==4.3.3
+  - bioconductor-xcms==4.0.0
+  - bioconductor-qvalue==2.34.0
+  - r-tidyverse==2.0.0

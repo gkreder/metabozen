@@ -34,14 +34,9 @@
             with:
               auto-update-conda: true
               channels: conda-forge, bioconda, defaults
-              python-version: 3.12
-              activate-environment: base
+              environment-file: environment.yml
+              activate-environment: metabozen-env
 
-          - name: Install Conda-Build and Other Dependencies
-            run: |
-              conda update -n base conda
-              conda update --all
-          
           - name: Install Conda-Build and Other Dependencies
             run: |
               conda install -y conda-build anaconda-client
@@ -57,5 +52,12 @@
           - name: Test Package Import
             run: |
               python -c "import metabozen"
+
+          - name: Upload to Anaconda (optional)
+            if: github.ref == 'refs/heads/main'
+            env:
+              ANACONDA_API_TOKEN: ${{ secrets.ANACONDA_API_TOKEN }}
+            run: |
+              anaconda upload $(conda build conda/ --output)
 
           
