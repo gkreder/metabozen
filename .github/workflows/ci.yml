@@ -1,5 +1,9 @@
    name: Build and Test Conda Package
 
+   defaults:
+     run:
+       shell: "bash -el {0}"
+
    on:
      push:
        branches:
