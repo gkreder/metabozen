@@ -3,6 +3,7 @@
    defaults:
      run:
        shell: "bash -el {0}"
+       auto-update-conda: true
 
    on:
      push:
