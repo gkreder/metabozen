@@ -33,9 +33,13 @@
           - name: Build package
             run: |
               conda run -n metabozen-env conda build conda/
+          
+          - name: Verify package build output
+            run: ls $(conda info --base)/conda-bld/noarch
 
           - name: Test package
             run: |
+              conda run -n metabozen-env conda config --append channels file://$(conda info --base)/conda-bld
               conda run -n metabozen-env conda install --use-local metabozen
               conda run -n metabozen-env metabozen --help
 
@@ -43,6 +47,7 @@
             uses: actions/upload-artifact@v4
             with:
               name: metabozen-package
-              path: /home/runner/miniconda3/conda-bld/noarch/*.tar.bz2
+              path: $(conda info --base)/conda-bld/noarch/*.tar.bz2
+              # path: /home/runner/miniconda3/conda-bld/noarch/*.tar.bz2
 
 
