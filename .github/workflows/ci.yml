@@ -20,11 +20,33 @@
                 target-platform: linux-aarch64
               - os: windows-latest
                 target-platform: win-64
+        name: Conda Package Build
         steps:
-          - uses: actions/checkout@v4
-          - name: Build conda package
-            uses: prefix-dev/rattler-build-action@v0.2.18
+          - name: Checkout code
+            uses: actions/checkout@v4
+
+          - name: Set up Miniconda
+            uses: conda-incubator/setup-miniconda@v4
             with:
-              artifact-name: package-${{ matrix.target-platform }}
-              build-args: --target-platform ${{ matrix.target-platform }}${{ matrix.target-platform == 'linux-aarch64' && ' --no-test' || '' }}
+              auto-update-conda: true
+              channels: conda-forge, bioconda, defaults
+              python-version: 3.12
+              activate-environment: base
+
+          - name: Install Conda-Build and Other Dependencies
+            run: |
+              conda install -y conda-build anaconda-client
+
+          - name: Build the Conda Package
+            run: |
+              conda build conda/
+
+          - name: Test Installation Locally
+            run: |
+              conda install --use-local metabozen
+
+          - name: Test Package Import
+            run: |
+              python -c "import metabozen"
+
           
