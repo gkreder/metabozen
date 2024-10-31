@@ -3,7 +3,6 @@
    defaults:
      run:
        shell: "bash -el {0}"
-       auto-update-conda: true
 
    on:
      push:
@@ -38,6 +37,11 @@
               python-version: 3.12
               activate-environment: base
 
+          - name: Install Conda-Build and Other Dependencies
+            run: |
+              conda update -n base conda
+              conda update --all
+          
           - name: Install Conda-Build and Other Dependencies
             run: |
               conda install -y conda-build anaconda-client
