@@ -24,3 +24,9 @@ lxml = ">=5.3.0,<6"
 r-base = ">=4.3.3,<5"
 r-tidyverse = ">=2.0.0,<3"
 rattler-build = ">=0.35.6,<0.36"
+
+[feature.conda-build.dependencies]
+conda-build = "*"
+
+[environments]
+conda-build = ["conda-build"]
