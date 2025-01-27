@@ -16,7 +16,7 @@ import ipdb
 from .utils import create_output_directory, read_samples
 
 ################################################################################
-def get_parser():
+def get_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description="Clustering workflow on output of XCMS feature finding")
     parser.add_argument('--xcms_in_file', '-i', required=True, help='tsv/csv file produced from XCMS feature finding run.')

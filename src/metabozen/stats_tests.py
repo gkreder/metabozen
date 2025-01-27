@@ -12,7 +12,7 @@ from pathlib import Path
 from .utils import read_samples, create_output_directory
 
 ################################################################################
-def get_parser():
+def get_parser(parser=None):
     if parser is None:
         parser = argparse.ArgumentParser(description="Run statistical tests on output from clustering")
     parser.add_argument('--clustering_in_file', '-i', required=True, help='tsv/csv file produced from XCMS feature finding run.')

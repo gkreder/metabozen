@@ -1,11 +1,5 @@
-# PyMetab
+# MetaboZen
 
-To launch Docker, from your docker Powershell:
-```docker run -it -v <DATA_DIRECTORY>:/home/data/ <SCRIPTS_DIRECTORY>:/home/scripts gkreder/py_metab bash```
+[![Documentation Status](https://readthedocs.org/projects/metabozen/badge/?version=latest)](https://metabozen.readthedocs.io/en/latest/?badge=latest)
 
-To run XCMS from inside Docker /home/scripts:
-```python xcms.py --in_file xcms.xlsx```
-
-To run clustering from inside Docker /home/scripts:
-```python clustering.py --in_file clustering.xlsx```
 
