@@ -38,7 +38,6 @@ extensions = [
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages',
-    'sphinx-rtd-theme',
     'myst_parser',
     'sphinx_autodoc_typehints',
     'sphinx_copybutton'
