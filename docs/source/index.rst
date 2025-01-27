@@ -24,10 +24,6 @@ Features
 * XCMS-based feature finding
 * Metabolite clustering
 * Statistical analysis and visualization
-* Integration with R through rpy2
-* Support for various data formats
-* Comprehensive plotting capabilities
-* Command-line interface for all major functions
 
 Installation
 ------------
@@ -37,10 +33,11 @@ See :doc:`installation` for detailed installation instructions.
 Quick Start
 ----------
 
-If using the Docker image, run:
+If using the Docker image (recommended), run:
+
 .. code-block:: bash
-   # Or using Docker
    docker run -it --rm gkreder/metabozen bash
+
 
 Contributing
 -----------

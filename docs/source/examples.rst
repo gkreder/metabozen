@@ -4,9 +4,9 @@ Examples
 Complete Workflow Example
 -----------------------
 
-This example demonstrates a complete metabolomics analysis workflow:
+This example demonstrates a complete metabolomics analysis workflow assuming you have prepared some mzML files for analysis.
 
-1. Prepare Your Data
+1. Prepare Your Sample Sheet
 ~~~~~~~~~~~~~~~~~~
 
 Create a samples file (``samples.xlsx``):
