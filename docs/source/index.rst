@@ -23,7 +23,7 @@ Features
 
 * XCMS-based feature finding
 * Metabolite clustering
-* Statistical analysis and visualization
+* Statistical tests
 
 Installation
 ------------
