@@ -31,7 +31,11 @@ dependencies = [
     "pyyaml",
     "ipdb",
     "xlrd",
-    "lxml"
+    "lxml",
+    "sphinx",
+    "sphinx-rtd-theme",
+    "myst-parser",
+    "sphinx-autodoc-typehints"
 ]
 requires-python = ">=3.8"
 
@@ -40,9 +44,7 @@ Homepage = "https://github.com/gkreder/metabozen"
 Issues = "https://github.com/gkreder/metabozen/issues"
 
 [project.scripts]
-metabozen = "metabozen.main:main"
-metabozen-feature-finding = "metabozen.feature_finding:main"
-metabozen-clustering = "metabozen.clustering:main"
+metabozen = "metabozen.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/metabozen"]

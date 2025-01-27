@@ -9,13 +9,14 @@ import ipdb
 from .utils import create_output_directory, read_samples
 
 ################################################################################
-def get_parser():
-    parser = argparse.ArgumentParser(description="Run XCMS on input data")
+def get_parser(parser=None):
+    if parser is None:
+        parser = argparse.ArgumentParser(description="Run XCMS on input data")
     parser.add_argument('--parameters', '-p', required=True, help='YAML configuration file with parameters')
     parser.add_argument('--samples', '-s', required=True, help='tsv/csv/xlsx file containing input sample information')
-    parser.add_argument('--out_file', '-o', required=True, help='Path to output tsv or csv file. Tsv is recommended. Parent directory will be created if nonexistent.')
+    parser.add_argument('--out_file', '-o', required=True, help='Path to output tsv or csv file')
     parser.add_argument('--no_logfile', '-n', action='store_true', help='Disable saving log to a file')
-    parser.add_argument('--debug_files', '-d', action='store_true', help='Save the output .rds and and chromPeak files for debugging')
+    parser.add_argument('--debug_files', '-d', action='store_true', help='Save output .rds and chromPeak files for debugging')
     parser.add_argument('--ipdb_debug', action='store_true', help='Enable debugging with ipdb')
     return parser
 

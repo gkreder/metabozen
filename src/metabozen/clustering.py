@@ -17,7 +17,8 @@ from .utils import create_output_directory, read_samples
 
 ################################################################################
 def get_parser():
-    parser = argparse.ArgumentParser(description="Clustering script for XCMS output data")
+    if parser is None:
+        parser = argparse.ArgumentParser(description="Clustering workflow on output of XCMS feature finding")
     parser.add_argument('--xcms_in_file', '-i', required=True, help='tsv/csv file produced from XCMS feature finding run.')
     parser.add_argument('--parameters', '-p', required=True, help='YAML configuration file with parameters')
     parser.add_argument('--samples', '-s', required=True, help='tsv/csv/xlsx file containing input sample information')
