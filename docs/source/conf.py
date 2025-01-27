@@ -18,6 +18,21 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../../src'))
 
+autodoc_mock_imports = [
+    'numpy',
+    'pandas',
+    'scipy',
+    'scikit-learn',
+    'matplotlib',
+    'rpy2',
+    'pyteomics',
+    'tqdm',
+    'yaml',
+    'xlrd',
+    'lxml',
+    'ipdb'
+]
+
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
