@@ -36,6 +36,7 @@ Quick Start
 If using the Docker image (recommended), run:
 
 .. code-block:: bash
+   
    docker run -it --rm gkreder/metabozen bash
 
 
