@@ -1,0 +1,6 @@
+mann_whitney_u:
+  group_1: "IC"
+  group_2: "CL"
+  kwargs: 
+    paired: false
+    qvalues: true

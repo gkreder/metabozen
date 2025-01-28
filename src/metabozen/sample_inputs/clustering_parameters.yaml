@@ -1,0 +1,7 @@
+alpha: 0.25
+tau: 4.0
+recursive_clustering: true
+frac_peaks: 0.8
+rt_1sWindow: 5.0
+cluster_outlier_1sWidth: 3.0
+parent_mz_check_intensity_frac: 0.6

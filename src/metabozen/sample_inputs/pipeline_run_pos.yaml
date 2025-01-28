@@ -1,0 +1,15 @@
+samples: "/home/gr513/2024-06-12_test_metabozen_runs/samples_pos.tsv"
+out_dir: "/home/gr513/2024-06-12_test_metabozen_runs/"
+run_name: "Pos"
+feature_finding:
+  parameters: "/home/gr513/2024-06-12_test_metabozen_runs/feature_finding_parameters.yaml"
+  out_file: "pos_xcms.tsv" 
+  debug_files: true
+clustering: 
+  parameters: "/home/gr513/2024-06-12_test_metabozen_runs/clustering_parameters.yaml"
+  out_file: "pos_clustering.tsv"
+  debug_files: true
+stats_tests:
+  parameters: "/home/gr513/2024-06-12_test_metabozen_runs/stats_tests_parameters.yaml"
+  out_file: "pos_stats.tsv"
+  plot_format: "svg"

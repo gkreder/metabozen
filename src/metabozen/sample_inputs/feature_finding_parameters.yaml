@@ -1,0 +1,29 @@
+# CentWave parameters
+centwave:
+  # The mass accuracy for feature detection in ppm
+  ppm: 30.0
+  mzdiff: 0.01
+  integrate: 1
+  fitgauss: false
+  noise: 0.0
+  peakwidth: [10.0,60.0]
+  prefilter: [3.0,500.0]
+  snthresh: 10.0
+  mzCenterFun: "wMean"
+# Obiwarp parameters (adjustRtime)
+obiwarp:
+  factorGap: 1.0
+  binSize: 0.5
+  factorDiag: 2.0
+  distFun: "cor_opt"
+  response: 1.0
+  localAlignment: false
+  initPenalty: 0.0
+# PeakDensity parameters (do_groupChromPeaks_density)
+density:
+  minSamples: 1
+  minFraction: 0.25
+  binSize: 0.025
+  bw: 3.0
+  maxFeatures: 200
+grouping_steps: 3
