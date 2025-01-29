@@ -1,10 +1,10 @@
 Statistical Tests Configuration
-===========================
+==================================
 
 The statistical tests module parameters are specified in a YAML file. Currently, only the Mann-Whitney U test is supported.
 
 Example Configuration
-----------------------
+--------------------------
 
 .. code-block:: yaml
 

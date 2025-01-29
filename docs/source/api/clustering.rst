@@ -29,11 +29,4 @@ Arguments
 --no_logfile, -n
     Disable saving log to a file
 --ipdb_debug
-    Enable debugging with ipdb
-
-Key Functions
----------------
-
-.. autofunction:: metabozen.clustering.read_config
-
-.. autofunction:: metabozen.clustering.read_xcms_input 
+    Enable debugging with ipdb 

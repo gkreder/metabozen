@@ -1,5 +1,5 @@
 Feature Finding Configuration
-==========================
+=================================
 
 Feature finding configuration parameters are passed to a run through an input YAML file. 
 
@@ -10,7 +10,7 @@ Parameters are grouped by XCMS function (CentWave, Obiwarp, and PeakDensity) res
 The `grouping_steps` parameter refers to the number of RT correction + grouping iterations to perform.
 
 Example Configuration
--------------------
+------------------------
 
 .. code-block:: yaml
 
@@ -44,7 +44,7 @@ Example Configuration
     grouping_steps: 3
 
 Parameters
----------
+-------------
 
 CentWave
 ^^^^^^^^^^^

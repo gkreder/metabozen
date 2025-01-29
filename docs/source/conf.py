@@ -16,6 +16,32 @@ release = '0.1.0'
 
 import os
 import sys
+from unittest.mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+# Mock modules
+MOCK_MODULES = [
+    'numpy',
+    'pandas',
+    'scipy',
+    'sklearn',
+    'sklearn.metrics',
+    'matplotlib',
+    'matplotlib.pyplot',
+    'rpy2',
+    'pyteomics',
+    'tqdm',
+    'yaml',
+    'xlrd',
+    'lxml'
+]
+
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
 sys.path.insert(0, os.path.abspath('../../src'))
 
 autodoc_mock_imports = [

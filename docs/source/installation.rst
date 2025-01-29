@@ -1,11 +1,13 @@
 Installation
-===========
+===============
 
 
-Using Docker (recommended)
------------
+Using Containers (recommended)
+-------------------------------
 
-The recommended way to use MetaboZen is through Docker, which ensures all dependencies are correctly installed. You must have Docker installed, for example `Docker Desktop <https://www.docker.com/products/docker-desktop/>`_.
+The recommended way to use MetaboZen is through the package's Docker image which ensures all dependencies are correctly installed.
+
+This can be done with Docker or another equivalent such as Podman. You must have Docker (or Podman) installed, for example `Docker Desktop <https://www.docker.com/products/docker-desktop/>`_.
 
 Once Docker is installed, the MetaboZen image can be pulled with:
 
@@ -20,8 +22,8 @@ And then MetaboZen can be run using:
    docker run -it -v <DATA_DIRECTORY>:/home/data/ gkreder/metabozen metabozen
 
 
-Development Installation
-----------------------
+Pip Installation
+---------------------------
 
 MetaboZen can also be installed from the Github repo. You must have R and Python installed already. Note that the R dependencies must be installed first. The easiest way to do this may be to use conda in which case all R dependencies can be installed from the following conda packages:
   
@@ -32,7 +34,8 @@ MetaboZen can also be installed from the Github repo. You must have R and Python
 
 Or alternatively these R dependencies can be installed from within an R session:
 
-.. code-block:: bash
+.. code-block:: r
+
     install.packages("tidyverse")
     
     if (!require("BiocManager", quietly = TRUE))
@@ -50,10 +53,18 @@ Once R dependencies have been installed, MetaboZen and its Python dependencies c
    pip install .
 
 Dependencies
------------
+----------------
+
+R Dependencies:
+~~~~~~~~~~~~~~~~~~
+
+- xcms == 4.0.0
+- qvalue == 2.38.0
+- tidyverse == 2.0.0
+
 
 Python Dependencies:
-~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~
 
 - Python >= 3.8,<3.13
 - numpy >=2.1.2,<3
@@ -68,9 +79,3 @@ Python Dependencies:
 - xlrd >=2.0.1,<3
 - lxml >=5.3.0,<6
 
-R Dependencies:
-~~~~~~~~~~~~~
-
-- xcms == 4.0.0
-- qvalue == 2.38.0
-- tidyverse == 2.0.0

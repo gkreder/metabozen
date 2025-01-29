@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 Welcome to MetaboZen's documentation!
-===================================
+========================================
 
 MetaboZen is a Python package for untargeted LC-MS metabolomics data analysis.
 
@@ -19,19 +19,19 @@ MetaboZen is a Python package for untargeted LC-MS metabolomics data analysis.
    api/index
 
 Features
---------
+----------
 
 * XCMS-based feature finding
 * Metabolite clustering
 * Statistical tests
 
 Installation
-------------
+--------------
 
 See :doc:`installation` for detailed installation instructions.
 
 Quick Start
-----------
+-------------
 
 If using the Docker image (recommended), run:
 
@@ -41,17 +41,17 @@ If using the Docker image (recommended), run:
 
 
 Contributing
------------
+--------------
 
 Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
 License
--------
+---------
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
 Indices and tables
-==================
+=====================
 
 * :ref:`genindex`
 * :ref:`modindex`

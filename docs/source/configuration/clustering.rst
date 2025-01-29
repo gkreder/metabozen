@@ -1,5 +1,5 @@
 Clustering Configuration
-=====================
+===========================
 
 The clustering module parameters are specified in a YAML file. A full description of the clustering parameters can be found at `<https://www.proquest.com/openview/23058f048ffb9c4fcb00de75214745aa/1?cbl=18750&diss=y>`_ or `<https://drive.google.com/file/d/1ALDTmtulIdCGkoIVh_DRBip-SKWDeLSK/view?usp=sharing>`_.
 
@@ -31,7 +31,7 @@ The pairwise distance between two features from the feature finding is calculate
 
 
 Example Configuration
--------------------
+-------------------------
 
 .. code-block:: yaml
 
@@ -44,7 +44,7 @@ Example Configuration
     parent_mz_check_intensity_frac: 0.6
 
 Parameters
----------
+-------------
 
 alpha
     Weighting coefficient for the retention time component of the distance function
